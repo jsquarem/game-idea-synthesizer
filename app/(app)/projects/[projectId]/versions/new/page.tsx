@@ -1,7 +1,6 @@
 import Link from 'next/link'
-import { createVersionPlanAction } from '@/app/actions/version-plan.actions'
+import { createVersionPlanAction, validateVersionPlanScopeAction } from '@/app/actions/version-plan.actions'
 import { getAllGameSystems } from '@/lib/repositories/game-system.repository'
-import { validateVersionPlanScope } from '@/lib/services/version-plan.service'
 import { VersionPlanForm } from './version-plan-form'
 
 export default async function NewVersionPlanPage({
@@ -33,7 +32,7 @@ export default async function NewVersionPlanPage({
         projectId={projectId}
         systems={systems}
         createAction={createVersionPlanAction}
-        validateScope={validateVersionPlanScope}
+        validateScope={validateVersionPlanScopeAction}
       />
     </div>
   )

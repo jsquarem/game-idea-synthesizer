@@ -4,6 +4,16 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import * as versionPlanService from '@/lib/services/version-plan.service'
 
+export async function validateVersionPlanScopeAction(
+  projectId: string,
+  systemIds: string[]
+): Promise<{
+  success: boolean
+  data?: { valid: boolean; missingDependencies: { nodeId: string; missingDep: string }[] }
+}> {
+  return versionPlanService.validateVersionPlanScope(projectId, systemIds)
+}
+
 export async function createVersionPlanAction(
   projectId: string,
   formData: FormData
