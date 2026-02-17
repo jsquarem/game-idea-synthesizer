@@ -1,0 +1,5 @@
+DevOne: We need a combat system that feels responsive.
+DevTwo: What about hit stun and cancel frames?
+DevOne: Yes, and we should hook it into the health system.
+DevTwo: So combat depends on health and maybe movement for positioning?
+DevOne: Exactly. Let's add status effects in v2.

@@ -1,0 +1,248 @@
+---
+description: Next.js 14+ engineering guidelines — Server-First App Router, RSC, Server Actions, Zustand, Shadcn, Tailwind
+globs: app/**/*.tsx, app/**/*.ts, components/**/*.tsx, lib/**/*.ts, store/**/*.ts, hooks/**/*.ts
+alwaysApply: true
+---
+
+# Next.js 14+ Engineering Guidelines
+
+You are an expert in TypeScript, JavaScript, React, Next.js App Router, React Server Components (RSC), Server Actions, Zustand, Shadcn UI, Radix UI, and Tailwind CSS.
+
+This project follows a **Server-First architecture** using the Next.js App Router.
+
+---
+
+# Core Principles
+
+- Default to Server Components
+- Add `'use client'` only when strictly required
+- Prefer TypeScript over PropTypes
+- Prefer composition over abstraction
+- Keep components small and focused
+- Favor clarity over cleverness
+
+---
+
+# Code Style
+
+- Use TypeScript
+- Use functional and declarative patterns
+- Avoid classes
+- Prefer named exports
+- Use descriptive variable names (isLoading, hasError, shouldFetch)
+- Use early returns and guard clauses
+- Keep the happy path last
+
+## Formatting Rules
+
+- 2 space indentation
+- Single quotes
+- No unnecessary semicolons
+- Always use `===`
+- No unused variables
+- Space after keywords
+- Space around infix operators
+- Use curly braces for multi-line blocks
+
+---
+
+# Project Structure (App Router)
+
+```
+app/
+  layout.tsx
+  page.tsx
+  loading.tsx
+  error.tsx
+  not-found.tsx
+  (routes)/
+components/
+lib/
+store/
+hooks/
+styles/
+```
+
+- Route segments use lowercase with dashes
+- Colocate route-specific components inside route folders
+- Shared components go in `/components`
+- Server utilities go in `/lib`
+
+---
+
+# React & Next.js Best Practices
+
+## Components
+
+- Use function components
+- Use Server Components by default
+- Use Client Components only when:
+  - Using browser APIs
+  - Using React state/hooks
+  - Using event handlers
+  - Using Zustand store
+
+## Hooks
+
+- Follow Rules of Hooks
+- Extract reusable logic into custom hooks
+- Avoid unnecessary `useEffect`
+- Avoid derived state when possible
+- Use `useMemo` only for expensive computation
+- Use `useCallback` only when necessary (e.g. memoized children)
+
+Avoid premature memoization.
+
+---
+
+# Data Fetching (App Router)
+
+## Server Components
+
+- Fetch directly inside Server Components
+- Use async components
+- Use native `fetch`
+- Use `revalidate` or `cache` options explicitly
+- Prefer static rendering when possible
+
+Example:
+
+```ts
+export default async function Page() {
+  const data = await fetch(url, { cache: 'no-store' }).then(r => r.json())
+  return <Component data={data} />
+}
+```
+
+## Server Actions
+
+- Use for mutations
+- Validate input using Zod
+- Model expected errors as return values
+- Keep actions colocated with components when possible
+
+---
+
+# State Management
+
+- Use Zustand for global client state
+- Keep server state on the server
+- Do not duplicate server data into global state
+- Lift state only when necessary
+
+---
+
+# Styling
+
+- Use Tailwind CSS (mobile-first)
+- Avoid global CSS unless necessary
+- Prefer utility-first styling
+- Do not use `@apply`
+- Keep components visually consistent
+
+## Component Structure
+
+Prefer single-file components unless complexity justifies splitting.
+
+---
+
+# Shadcn & Radix
+
+- Use Shadcn as base UI primitives
+- Extend via composition
+- Avoid modifying library internals
+- Keep UI accessible by default
+
+---
+
+# Performance
+
+- Minimize `'use client'`
+- Avoid unnecessary client-side data fetching
+- Use streaming where beneficial
+- Use `next/image`
+- Provide explicit image sizes
+- Use dynamic imports via `next/dynamic` when needed
+- Optimize for Core Web Vitals: LCP, CLS, INP, TTFB
+
+---
+
+# Error Handling
+
+- Use `error.tsx` per route segment
+- Use `not-found.tsx` when appropriate
+- Use guard clauses
+- Log server errors
+- Return safe, typed error responses from Server Actions
+
+---
+
+# Forms & Validation
+
+- Prefer Server Actions for forms
+- Validate with Zod
+- Use `react-hook-form` only when complex client validation is required
+- Keep forms progressively enhanced
+
+---
+
+# Accessibility (a11y)
+
+- Use semantic HTML
+- Use Radix primitives for accessible patterns
+- Ensure keyboard navigation
+- Ensure focus visibility
+- Use proper ARIA attributes when necessary
+
+---
+
+# Security
+
+- Validate all inputs (Zod on server)
+- Never trust client data
+- Avoid `dangerouslySetInnerHTML`
+- Sanitize any rendered HTML
+- Use HTTP-only cookies for auth
+
+---
+
+# Internationalization
+
+- Use Next.js built-in i18n routing
+- Keep translations server-side when possible
+
+---
+
+# URL State
+
+- Use `nuqs` for search param state management
+- Avoid duplicating URL state in local state
+
+---
+
+# Testing
+
+- Use Vitest or Jest for unit tests
+- Use React Testing Library
+- Test behavior, not implementation
+- Use Playwright for e2e tests
+
+---
+
+# What to Avoid
+
+- Overusing `useEffect`
+- Global client state for server data
+- Excessive memoization
+- Deep prop drilling (use composition or context)
+- Large client components
+- Mixing data fetching into client components
+
+---
+
+# Follow Official Docs
+
+Always align with:
+- Next.js App Router documentation
+- React Server Components architecture
+- Latest Next.js release notes

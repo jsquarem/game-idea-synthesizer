@@ -1,0 +1,25 @@
+UserA: Idea 1 - we need inventory
+UserB: Idea 2 - crafting could use that
+UserA: Idea 3 - and economy for prices
+UserB: Idea 4 - quests could reward items
+UserA: Idea 5 - so inventory, crafting, economy, quests are all linked
+UserB: Idea 6 - what about weight limits?
+UserA: Idea 7 - good point, encumbrance system
+UserB: Idea 8 - and UI for all of this
+UserA: Idea 9 - settings for keybinds
+UserB: Idea 10 - accessibility options
+UserA: Idea 11 - save/load for inventory state
+UserB: Idea 12 - cloud sync later
+UserA: Idea 13 - for now local only
+UserB: Idea 14 - combat needs to read inventory for equipped items
+UserA: Idea 15 - so combat depends on inventory
+UserB: Idea 16 - and movement for dodge
+UserA: Idea 17 - health for damage
+UserB: Idea 18 - this is getting big
+UserA: Idea 19 - we can scope v1 to core loop
+UserB: Idea 20 - movement, health, combat, inventory for v1
+UserA: Idea 21 - crafting and economy v2
+UserB: Idea 22 - quests v3
+UserA: Idea 23 - sounds like a plan
+UserB: Idea 24 - let's document it
+UserA: Idea 25 - GamePlan AI time

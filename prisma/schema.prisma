@@ -1,0 +1,225 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  genre       String?
+  platform    String?
+  status      String   @default("ideation")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  brainstorms        BrainstormSession[]
+  synthesizedOutputs SynthesizedOutput[]
+  gameSystems        GameSystem[]
+  versionPlans       VersionPlan[]
+  promptHistories    PromptHistory[]
+  exports            Export[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model BrainstormSession {
+  id        String   @id @default(cuid())
+  projectId String
+  title     String
+  source    String   @default("manual")
+  content   String
+  author    String?
+  tags      String?
+  createdAt DateTime @default(now())
+
+  project             Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  synthesizedOutputs  SynthesizedOutput[]
+
+  @@index([projectId])
+  @@index([createdAt])
+}
+
+model SynthesizedOutput {
+  id                   String   @id @default(cuid())
+  projectId            String
+  brainstormSessionId  String
+  title                String
+  content              String
+  extractedSystems     String
+  status               String   @default("pending")
+  aiProvider           String?
+  aiModel              String?
+  promptTokens         Int?
+  completionTokens     Int?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  project            Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  brainstormSession  BrainstormSession @relation(fields: [brainstormSessionId], references: [id], onDelete: Cascade)
+  gameSystems        GameSystem[]
+
+  @@index([projectId])
+  @@index([brainstormSessionId])
+  @@index([status])
+}
+
+model GameSystem {
+  id                   String   @id @default(cuid())
+  projectId            String
+  synthesizedOutputId  String?
+  systemSlug           String
+  name                 String
+  version              String   @default("v0.1")
+  status               String   @default("draft")
+  purpose              String?
+  currentState         String?
+  targetState          String?
+  coreMechanics        String?
+  inputs               String?
+  outputs              String?
+  failureStates        String?
+  scalingBehavior      String?
+  mvpCriticality       String   @default("important")
+  implementationNotes  String?
+  openQuestions        String?
+  markdownContent      String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  project           Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  synthesizedOutput SynthesizedOutput? @relation(fields: [synthesizedOutputId], references: [id], onDelete: SetNull)
+
+  dependsOn         Dependency[]       @relation("DependsOn")
+  dependedOnBy      Dependency[]       @relation("DependedOnBy")
+  changeLogs        ChangeLog[]
+  versionPlanItems  VersionPlanItem[]
+  promptHistories   PromptHistory[]
+
+  @@unique([projectId, systemSlug])
+  @@index([projectId])
+  @@index([status])
+  @@index([mvpCriticality])
+}
+
+model Dependency {
+  id             String   @id @default(cuid())
+  sourceSystemId String
+  targetSystemId String
+  dependencyType String   @default("requires")
+  description    String?
+  createdAt      DateTime @default(now())
+
+  sourceSystem GameSystem @relation("DependsOn", fields: [sourceSystemId], references: [id], onDelete: Cascade)
+  targetSystem GameSystem @relation("DependedOnBy", fields: [targetSystemId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceSystemId, targetSystemId])
+  @@index([sourceSystemId])
+  @@index([targetSystemId])
+}
+
+model ChangeLog {
+  id           String   @id @default(cuid())
+  gameSystemId String
+  version      String
+  summary      String
+  details      String?
+  changeType   String   @default("update")
+  author       String?
+  createdAt    DateTime @default(now())
+
+  gameSystem GameSystem @relation(fields: [gameSystemId], references: [id], onDelete: Cascade)
+
+  @@index([gameSystemId])
+  @@index([createdAt])
+}
+
+model VersionPlan {
+  id                 String    @id @default(cuid())
+  projectId          String
+  versionLabel       String
+  title              String
+  description        String?
+  status             String    @default("draft")
+  includedSystems    String
+  excludedSystems    String?
+  phases             String?
+  milestones         String?
+  riskAreas          String?
+  implementationOrder String?
+  scopeValidation    String?
+  markdownContent    String?
+  finalizedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  planItems VersionPlanItem[]
+
+  @@unique([projectId, versionLabel])
+  @@index([projectId])
+  @@index([status])
+}
+
+model VersionPlanItem {
+  id            String   @id @default(cuid())
+  versionPlanId String
+  gameSystemId  String
+  phase         Int      @default(1)
+  sortOrder     Int      @default(0)
+  notes         String?
+
+  versionPlan VersionPlan @relation(fields: [versionPlanId], references: [id], onDelete: Cascade)
+  gameSystem  GameSystem  @relation(fields: [gameSystemId], references: [id], onDelete: Cascade)
+
+  @@unique([versionPlanId, gameSystemId])
+  @@index([versionPlanId])
+}
+
+model PromptHistory {
+  id               String   @id @default(cuid())
+  projectId        String
+  gameSystemId     String?
+  versionPlanId    String?
+  promptType       String
+  promptTemplate   String
+  promptInput      String
+  promptContext    String?
+  response         String?
+  aiProvider       String
+  aiModel          String
+  promptTokens     Int?
+  completionTokens Int?
+  durationMs       Int?
+  status           String   @default("completed")
+  error            String?
+  createdAt        DateTime @default(now())
+
+  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  gameSystem GameSystem? @relation(fields: [gameSystemId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([gameSystemId])
+  @@index([promptType])
+  @@index([createdAt])
+}
+
+model Export {
+  id         String   @id @default(cuid())
+  projectId  String
+  exportType String
+  format     String   @default("markdown")
+  content    String
+  metadata   String?
+  createdAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([exportType])
+}
