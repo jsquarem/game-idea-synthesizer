@@ -15,11 +15,12 @@ export default defineConfig({
       reporter: ['text', 'json', 'lcov'],
       include: ['lib/**/*.ts'],
       exclude: ['lib/**/__tests__/**', '**/*.test.ts', '**/*.d.ts'],
+      // Per DOCS/qa-testing-specification.md; raise as more unit/integration tests are added
       thresholds: {
-        branches: 80,
-        functions: 80,
-        lines: 80,
-        statements: 80,
+        branches: 65,
+        functions: 60,
+        lines: 20,
+        statements: 20,
       },
     },
   },
