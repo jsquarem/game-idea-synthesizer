@@ -88,7 +88,13 @@ export async function listGameSystems(
   }
 
   const [data, total] = await Promise.all([
-    prisma.gameSystem.findMany({ where, skip, take: pageSize, orderBy: { name: 'asc' } }),
+    prisma.gameSystem.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { name: 'asc' },
+      include: { _count: { select: { dependsOn: true } } },
+    }),
     prisma.gameSystem.count({ where }),
   ])
 

@@ -13,7 +13,9 @@ import type {
   CreateProjectInput,
   UpdateProjectInput,
   ProjectFilter,
+  ProjectCountsByStatus,
 } from '../repositories/project.repository'
+import { getProjectCountsByStatus as getProjectCountsByStatusRepo } from '../repositories/project.repository'
 import { listDependenciesByProject } from '../repositories/dependency.repository'
 
 export async function createProject(
@@ -81,6 +83,21 @@ export async function deleteProject(id: string): Promise<ServiceResult<void>> {
     return {
       success: false,
       error: e instanceof Error ? e.message : 'Failed to delete project',
+      code: 'INTERNAL',
+    }
+  }
+}
+
+export async function getDashboardCounts(): Promise<
+  ServiceResult<ProjectCountsByStatus>
+> {
+  try {
+    const counts = await getProjectCountsByStatusRepo()
+    return { success: true, data: counts }
+  } catch (e) {
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : 'Failed to load dashboard counts',
       code: 'INTERNAL',
     }
   }

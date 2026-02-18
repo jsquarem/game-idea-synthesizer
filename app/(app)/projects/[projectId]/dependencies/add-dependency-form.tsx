@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { GameSystem } from '@prisma/client'
 import { addDependencyAction } from '@/app/actions/dependency.actions'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 type Props = {
   projectId: string
@@ -40,17 +42,22 @@ export function AddDependencyForm({ projectId, systems }: Props) {
     setTargetId('')
   }
 
+  const selectClass = cn(
+    'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs',
+    'transition-[color,box-shadow] outline-none focus-visible:ring-ring focus-visible:ring-[3px]'
+  )
+
   return (
     <form onSubmit={submit} className="flex flex-wrap items-end gap-4">
-      <div>
-        <label htmlFor="source" className="mb-1 block text-sm font-medium">
+      <div className="grid flex-1 gap-2 min-w-[180px]">
+        <label htmlFor="source" className="text-sm font-medium">
           Source (depends on)
         </label>
         <select
           id="source"
           value={sourceId}
           onChange={(e) => setSourceId(e.target.value)}
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+          className={selectClass}
         >
           <option value="">Select system</option>
           {systems.map((s) => (
@@ -60,15 +67,15 @@ export function AddDependencyForm({ projectId, systems }: Props) {
           ))}
         </select>
       </div>
-      <div>
-        <label htmlFor="target" className="mb-1 block text-sm font-medium">
+      <div className="grid flex-1 gap-2 min-w-[180px]">
+        <label htmlFor="target" className="text-sm font-medium">
           Target (depended on)
         </label>
         <select
           id="target"
           value={targetId}
           onChange={(e) => setTargetId(e.target.value)}
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+          className={selectClass}
         >
           <option value="">Select system</option>
           {systems.map((s) => (
@@ -78,16 +85,10 @@ export function AddDependencyForm({ projectId, systems }: Props) {
           ))}
         </select>
       </div>
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-      >
+      <Button type="submit" disabled={pending}>
         {pending ? 'Adding…' : 'Add dependency'}
-      </button>
-      {error && (
-        <p className="w-full text-sm text-destructive">{error}</p>
-      )}
+      </Button>
+      {error && <p className="w-full text-sm text-destructive">{error}</p>}
     </form>
   )
 }

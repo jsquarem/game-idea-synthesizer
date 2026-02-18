@@ -49,7 +49,13 @@ export async function listProjects(
   }
 
   const [data, total] = await Promise.all([
-    prisma.project.findMany({ where, skip, take: pageSize, orderBy: { createdAt: 'desc' } }),
+    prisma.project.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { createdAt: 'desc' },
+      include: { _count: { select: { gameSystems: true } } },
+    }),
     prisma.project.count({ where }),
   ])
 
@@ -68,6 +74,32 @@ export async function updateProject(id: string, data: UpdateProjectInput): Promi
 
 export async function deleteProject(id: string): Promise<void> {
   await prisma.project.delete({ where: { id } })
+}
+
+export type ProjectCountsByStatus = {
+  total: number
+  ideation: number
+  active: number
+  archived: number
+}
+
+export async function getProjectCountsByStatus(): Promise<ProjectCountsByStatus> {
+  const [total, groups] = await Promise.all([
+    prisma.project.count(),
+    prisma.project.groupBy({
+      by: ['status'],
+      _count: { id: true },
+    }),
+  ])
+  const byStatus = Object.fromEntries(
+    groups.map((g) => [g.status, g._count.id])
+  ) as Record<string, number>
+  return {
+    total,
+    ideation: byStatus.ideation ?? 0,
+    active: byStatus.active ?? 0,
+    archived: byStatus.archived ?? 0,
+  }
 }
 
 export async function getProjectSummary(id: string) {
