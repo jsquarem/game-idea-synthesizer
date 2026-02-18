@@ -12,13 +12,14 @@
 3. [Dashboard](#3-dashboard)
 4. [Projects](#4-projects)
 5. [Brainstorm Sessions](#5-brainstorm-sessions)
-6. [Game Systems](#6-game-systems)
-7. [Dependencies](#7-dependencies)
-8. [Version Plans](#8-version-plans)
-9. [Prompt History](#9-prompt-history)
-10. [Export](#10-export)
-11. [Core Workflow](#11-core-workflow)
-12. [Glossary](#12-glossary)
+6. [Idea Stream](#6-idea-stream)
+7. [Game Systems](#7-game-systems)
+8. [Dependencies](#8-dependencies)
+9. [Version Plans](#9-version-plans)
+10. [Prompt History](#10-prompt-history)
+11. [Export](#11-export)
+12. [Core Workflow](#12-core-workflow)
+13. [Glossary](#13-glossary)
 
 ---
 
@@ -121,6 +122,7 @@ Once inside a project, a tab bar provides navigation between all project section
 | **Dependencies** | System dependency graph |
 | **Versions** | Version plan management |
 | **Prompts** | AI prompt history |
+| **Idea Stream** | Lightweight collaboration: threads and replies, then finalize to brainstorm |
 | **Export** | Document export and download |
 
 A breadcrumb trail at the top always shows your current location and lets you navigate back.
@@ -162,9 +164,41 @@ Click any session from the list to view its details:
 
 On a session's detail page, use the **Delete** button. You will be asked to confirm before the session is permanently removed.
 
+You can also create a brainstorm session by **finalizing** threads from Idea Stream (see [Idea Stream](#6-idea-stream)).
+
 ---
 
-## 6. Game Systems
+## 6. Idea Stream
+
+Idea Stream is a lightweight, always-open collaboration space per project. Use it to discuss ideas in threads, then turn selected threads into a brainstorm session and run synthesis.
+
+### Accessing Idea Stream
+
+From a project, click the **Idea Stream** tab in the sidebar. You’ll see a two-panel layout: thread list on the left, active thread (messages) on the right.
+
+### Creating a Thread
+
+In the left panel, type in the “Start a new thread…” box and click the send button. A new thread is created with your message as the first post.
+
+### Replying to Messages
+
+Open a thread by clicking it in the list. At the bottom of the right panel, type in “Write a message…” and click send. To reply to a specific message, click **Reply** on that message; your reply will be linked to it.
+
+### Editing and Deleting Messages
+
+You can edit or delete only your own messages. Use the **Edit** or **Delete** actions on the message. Edited messages show an “(edited)” marker; deleted messages show a “Message deleted” placeholder.
+
+### Finalizing Threads to Brainstorm Sessions
+
+Select one or more threads using the checkboxes in the left panel. Click **Finalize + Synthesize**. The app generates a Brainstorm Session containing the full thread content (in markdown), then opens the synthesis flow so you can extract systems from that session.
+
+### Display Name
+
+Click your profile icon in the top bar to open **Settings**. Under **Profile**, set a **Display name**. It is shown in Idea Stream and other collaboration views. If you leave it blank, the app shows “Creator” for the thread starter and “Responder” for others in each thread.
+
+---
+
+## 7. Game Systems
 
 A game system is a distinct gameplay subsystem (e.g., Movement, Combat, Health, Inventory, Economy, Crafting, Progression). Systems are the core building blocks of your game design documentation.
 
@@ -221,7 +255,7 @@ On a system's detail page, use the **Delete** button with confirmation.
 
 ---
 
-## 7. Dependencies
+## 8. Dependencies
 
 Dependencies define the relationships between game systems. For example, a Combat system might depend on Health and Movement systems. Understanding these relationships is critical for planning implementation order.
 
@@ -258,7 +292,7 @@ A form at the bottom lets you create new dependencies:
 
 ---
 
-## 8. Version Plans
+## 9. Version Plans
 
 Version plans let you scope which systems belong to a specific release (e.g., v1, v1.1, v2). They validate that all required dependencies are included and generate phased implementation sequences.
 
@@ -297,7 +331,7 @@ Clicking **Finalize** on a draft plan marks it as finalized. Finalized plans:
 
 ---
 
-## 9. Prompt History
+## 10. Prompt History
 
 The Prompts section tracks AI prompt interactions associated with your project.
 
@@ -315,7 +349,7 @@ The **New Prompt** page provides access to the AI prompt generator for creating 
 
 ---
 
-## 10. Export
+## 11. Export
 
 The Export section lets you generate downloadable documents from your project data.
 
@@ -346,7 +380,7 @@ Click **Download** to save the file to your computer.
 
 ---
 
-## 11. Core Workflow
+## 12. Core Workflow
 
 Here is the recommended workflow for using GamePlan AI from start to finish:
 
@@ -388,7 +422,7 @@ The goal is to go from raw brainstorm to a structured, dependency-aware implemen
 
 ---
 
-## 12. Glossary
+## 13. Glossary
 
 | Term | Definition |
 |---|---|

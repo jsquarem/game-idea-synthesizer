@@ -808,6 +808,22 @@ For each prompt type (Implementation, Architecture, Refactor, Balance, Expansion
 
 ---
 
+## 4.9 `e2e/idea-stream.spec.ts`
+
+### Test: Idea Stream — create thread and post message
+
+| Step | Action | Assertion |
+|------|--------|-----------|
+| 1 | Navigate to project (create or use existing) | Overview loaded |
+| 2 | Click Idea Stream in sidebar | Idea Stream URL, two-panel layout |
+| 3 | Fill "Start a new thread…" and submit | Thread appears in list, right panel shows thread |
+| 4 | Fill "Write a message…" and send | Message appears in thread |
+| 5 | (Optional) Select thread(s), Finalize + Synthesize | Brainstorm session created, redirect to synthesize |
+
+Unit: Idea Stream Zod schemas are covered in `lib/validations/__tests__/schemas.test.ts` (createIdeaStreamThreadSchema, postIdeaStreamMessageSchema, editIdeaStreamMessageSchema, finalizeIdeaStreamThreadsSchema).
+
+---
+
 # 5. Test Infrastructure
 
 ## 5.1 File Naming Conventions

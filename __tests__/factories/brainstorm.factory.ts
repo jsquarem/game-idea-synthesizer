@@ -14,6 +14,7 @@ export function buildBrainstormSession(
     content: 'We should add a combat system with health bars and damage types.',
     author: 'TestUser',
     tags: null,
+    sourceThreadIds: null,
     createdAt: new Date(),
     ...overrides,
   }

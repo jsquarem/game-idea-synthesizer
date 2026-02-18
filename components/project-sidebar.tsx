@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   Lightbulb,
+  MessageCircle,
   Boxes,
   GitBranch,
   Calendar,
@@ -25,6 +26,7 @@ const SIDEBAR_STORAGE_KEY = 'gameplan-sidebar-collapsed'
 const navItems = [
   { href: 'overview', label: 'Overview', icon: LayoutDashboard },
   { href: 'brainstorms', label: 'Brainstorms', icon: Lightbulb },
+  { href: 'idea-stream', label: 'Idea Stream', icon: MessageCircle },
   { href: 'systems', label: 'Systems', icon: Boxes },
   { href: 'dependencies', label: 'Dependencies', icon: GitBranch },
   { href: 'versions', label: 'Versions', icon: Calendar },

@@ -12,9 +12,10 @@ Handles the intake of raw brainstorming content from multiple sources (manual pa
 
 ## Inputs
 - Raw text content (pasted or uploaded)
-- Source type indicator (manual | discord | upload)
+- Source type indicator (manual | discord | upload | idea-stream)
 - Project reference
 - Optional author and tags metadata
+- Idea Stream finalize: selected thread IDs and generated markdown (source = "idea-stream", sourceThreadIds)
 
 ## Outputs
 - Stored BrainstormSession record
@@ -24,6 +25,7 @@ Handles the intake of raw brainstorming content from multiple sources (manual pa
 ## Dependencies
 - doc-store (for persistence)
 - brainstorm-parser (for format detection and parsing)
+- Idea Stream (finalize flow creates brainstorm sessions from threads)
 
 ## Code Mapping
 - Service: `lib/services/brainstorm.service.ts`

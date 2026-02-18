@@ -67,6 +67,42 @@ export const createDependencyEdgeSchema = z
     path: ['targetSystemId'],
   })
 
+const ideaStreamContent = z
+  .string()
+  .max(10_000, 'Content must be at most 10,000 characters')
+  .transform((s) => s.trim())
+  .refine((s) => s.length > 0, 'Content is required')
+
+export const createIdeaStreamThreadSchema = z.object({
+  projectId: z.string().min(1),
+  content: ideaStreamContent,
+  title: z.string().max(200).optional().nullable(),
+})
+
+export const postIdeaStreamMessageSchema = z.object({
+  projectId: z.string().min(1),
+  threadId: z.string().min(1),
+  content: ideaStreamContent,
+  parentMessageId: z.string().optional().nullable(),
+})
+
+export const editIdeaStreamMessageSchema = z.object({
+  messageId: z.string().min(1),
+  content: ideaStreamContent,
+})
+
+export const finalizeIdeaStreamThreadsSchema = z.object({
+  projectId: z.string().min(1),
+  threadIds: z.array(z.string().min(1)).min(1, 'At least one thread is required'),
+  title: z.string().max(200).optional().nullable(),
+  authorDisplay: z.string().max(100).optional().nullable(),
+})
+
+export type CreateIdeaStreamThreadInput = z.infer<typeof createIdeaStreamThreadSchema>
+export type PostIdeaStreamMessageInput = z.infer<typeof postIdeaStreamMessageSchema>
+export type EditIdeaStreamMessageInput = z.infer<typeof editIdeaStreamMessageSchema>
+export type FinalizeIdeaStreamThreadsInput = z.infer<typeof finalizeIdeaStreamThreadsSchema>
+
 export type CreateProjectInput = z.infer<typeof createProjectSchema>
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>
 export type CreateGameSystemInput = z.infer<typeof createGameSystemSchema>

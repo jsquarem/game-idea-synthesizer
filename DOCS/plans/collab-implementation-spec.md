@@ -1,11 +1,11 @@
-# GamePlan AI — Collaboration “Wall” Module (DB-backed, Slack-like, live updates)
+# GamePlan AI — Idea Stream (Collaboration Module)
 Date: 2026-02-18  
 Scope: Lightweight, always-open collaboration space per project. Threads + replies. Plain text only. Live updates (no full page refresh). Finalize selected threads → generate Brainstorm doc → Synthesize.
 
 ---
 
 ## 1) UX Summary
-- New project nav item: **Wall**
+- New project nav item: **Idea Stream**
 - 2-panel layout:
   - **Left:** thread list (newest activity, unread indicator)
   - **Right:** active thread (messages + inline replies)
@@ -43,7 +43,7 @@ Scope: Lightweight, always-open collaboration space per project. Threads + repli
 ## 3) Live Updates (v1)
 
 ### v1 approach (simple)
-- Use client polling/refetch every **2 seconds** while Wall page is open:
+- Use client polling/refetch every **2 seconds** while Idea Stream page is open:
   - Threads list endpoint returns updated threads + last activity + unread state
   - Messages endpoint returns new messages since last fetch
 - Use optimistic UI for posting (append locally, reconcile on response)
@@ -67,9 +67,9 @@ Scope: Lightweight, always-open collaboration space per project. Threads + repli
 - existing
 
 #### `project_memberships`
-- existing (controls who can access Wall)
+- existing (controls who can access Idea Stream)
 
-#### `wall_threads`
+#### `idea_stream_threads`
 - `id` (cuid)
 - `project_id` (fk)
 - `created_by_user_id` (fk)
@@ -77,11 +77,11 @@ Scope: Lightweight, always-open collaboration space per project. Threads + repli
 - `created_at`
 - `updated_at` (bumped on new message/edit)
 
-#### `wall_messages`
+#### `idea_stream_messages`
 - `id` (cuid)
 - `project_id` (fk)
 - `thread_id` (fk)
-- `parent_message_id` (nullable fk -> wall_messages.id)  // reply-to relationship
+- `parent_message_id` (nullable fk -> idea_stream_messages.id)  // reply-to relationship
 - `author_user_id` (fk)
 - `content` (text)
 - `created_at`
@@ -94,7 +94,7 @@ Scope: Lightweight, always-open collaboration space per project. Threads + repli
   - (project_id, updated_at)
   - (parent_message_id)
 
-#### `wall_thread_reads`
+#### `idea_stream_thread_reads`
 - `id` (cuid)
 - `project_id` (fk)
 - `thread_id` (fk)
@@ -104,11 +104,11 @@ Scope: Lightweight, always-open collaboration space per project. Threads + repli
 
 #### `brainstorm_sessions`
 - existing (target for finalize)
-  - Ensure it supports `content_markdown` and metadata such as `source = "wall"` and `source_thread_ids`
+  - Ensure it supports `content_markdown` and metadata such as `source = "idea-stream"` and `source_thread_ids`
 
 #### `audit_log` (optional but recommended)
 - `id`
-- `entity_type` (“wall_message”)
+- `entity_type` (“idea_stream_message”)
 - `entity_id`
 - `action` (“edit” | “delete”)
 - `actor_user_id`
@@ -128,7 +128,7 @@ Prefer Server Actions where already used; route handlers are fine for polling.
 ### Endpoints (suggested)
 
 #### Threads list (left panel)
-`GET /api/projects/:projectId/wall/threads?cursor=&limit=30`
+`GET /api/projects/:projectId/idea-stream/threads?cursor=&limit=30`
 
 Returns:
 - threads with:
@@ -142,7 +142,7 @@ Returns:
   - unread_count (optional; can be computed as messages after last_read_at)
 
 #### Thread detail (messages)
-`GET /api/projects/:projectId/wall/threads/:threadId/messages?since=<iso>`
+`GET /api/projects/:projectId/idea-stream/threads/:threadId/messages?since=<iso>`
 
 Returns:
 - messages sorted by created_at asc
@@ -150,7 +150,7 @@ Returns:
   - if deleted_at: return `{ deleted: true }` and omit content or return empty content
 
 #### Create thread + first message
-`POST /api/projects/:projectId/wall/threads`
+`POST /api/projects/:projectId/idea-stream/threads`
 
 Body:
 - `content` (string, required)
@@ -159,7 +159,7 @@ Body:
 Returns created thread + message.
 
 #### Post message (reply or normal)
-`POST /api/projects/:projectId/wall/threads/:threadId/messages`
+`POST /api/projects/:projectId/idea-stream/threads/:threadId/messages`
 
 Body:
 - `content` (string, required)
@@ -168,7 +168,7 @@ Body:
 Returns created message.
 
 #### Edit message
-`PATCH /api/projects/:projectId/wall/messages/:messageId`
+`PATCH /api/projects/:projectId/idea-stream/messages/:messageId`
 
 Body:
 - `content` (string, required)
@@ -178,23 +178,23 @@ Rules:
 - set edited_at, updated_at
 
 #### Delete message
-`DELETE /api/projects/:projectId/wall/messages/:messageId`
+`DELETE /api/projects/:projectId/idea-stream/messages/:messageId`
 
 Rules:
 - only author can delete (v1)
 - soft delete: set deleted_at, deleted_by_user_id
 
 #### Mark thread read
-`POST /api/projects/:projectId/wall/threads/:threadId/read`
+`POST /api/projects/:projectId/idea-stream/threads/:threadId/read`
 
 Body:
 - `last_read_at` (optional; default now)
 
 Behavior:
-- upsert wall_thread_reads
+- upsert idea_stream_thread_reads
 
 #### Finalize selected threads → create brainstorm session
-`POST /api/projects/:projectId/wall/finalize`
+`POST /api/projects/:projectId/idea-stream/finalize`
 
 Body:
 - `thread_ids: string[]` (required)
@@ -214,7 +214,7 @@ Then UI navigates:
 When finalizing, generate markdown like:
 
 ```md
-# Wall Finalize — <Project Name>
+# Idea Stream Finalize — <Project Name>
 Generated: <ISO timestamp>
 Threads: <count>
 
@@ -243,7 +243,7 @@ Created at: <timestamp>
   - Render as: `- <time> <name>: (deleted)`
 
 Store:
-- `brainstorm_sessions.source = "wall"`
+- `brainstorm_sessions.source = "idea-stream"`
 - `brainstorm_sessions.source_thread_ids = [...]`
 
 ---
@@ -251,7 +251,7 @@ Store:
 ## 7) UI Implementation Details (Next.js App Router)
 
 ### Route
-Add: `/projects/[projectId]/wall/page.tsx`
+Add: `/projects/[projectId]/idea-stream/page.tsx`
 
 Layout: 2 panels  
 Use Resizable (shadcn) optional; otherwise fixed widths:
@@ -266,7 +266,7 @@ Use Resizable (shadcn) optional; otherwise fixed widths:
 Elements:
 
 Header:
-- Title “Wall”
+- Title “Idea Stream”
 - Button: “New Thread”
 - Search (optional v1.1; skip for v1)
 
@@ -335,7 +335,7 @@ Add to Settings or Avatar dropdown modal:
 - “Display name” input
 - Save button
 
-Used immediately for Wall avatar labels.
+Used immediately for Idea Stream avatar labels.
 
 If display name is empty:
 - use Creator/Responder labeling per thread
@@ -365,7 +365,7 @@ Prefer server as source of truth; client polling keeps it fresh.
 
 ## 11) Acceptance Criteria
 
-- Project members can open Wall and see threads/messages
+- Project members can open Idea Stream and see threads/messages
 - New message by partner appears within 2 seconds without page refresh
 - Replying to a message creates a visible threaded reply relationship
 - Edit/delete works with proper markers/tombstones

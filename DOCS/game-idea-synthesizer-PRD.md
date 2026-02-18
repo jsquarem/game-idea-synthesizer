@@ -120,6 +120,7 @@ User traits:
 A top-level container for:
 
 - Brainstorm Sessions
+- Idea Stream (threads and messages; can be finalized into brainstorm sessions)
 - Synthesized Outputs
 - Systems
 - Version Plans
@@ -145,6 +146,7 @@ v1 input methods:
 - Manual paste of Discord conversations
 - Freeform text entry
 - Markdown upload
+- Idea Stream finalize (select threads → generate brainstorm session → synthesize)
 
 Each session stores:
 
@@ -361,8 +363,8 @@ All modifications are proposed and reviewed before persistence.
 # 9. Core Workflow
 
 1. Create Project.
-2. Add Brainstorm Session.
-3. Paste Discord thread or ideas.
+2. Add Brainstorm Session (or use Idea Stream: create threads, discuss, then Finalize + Synthesize to create a session from selected threads).
+3. Paste Discord thread or ideas (or use content from Idea Stream finalize).
 4. Click “Synthesize.”
 5. Review structured output.
 6. Convert output to Systems.
