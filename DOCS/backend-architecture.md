@@ -812,6 +812,21 @@ export async function deletePromptHistory(id: string): Promise<void>
 
 ---
 
+## 2.8 Workspace and encrypted AI config
+
+Workspace is a first-class entity; projects may be scoped to a workspace. Workspace members can manage membership and workspace-scoped AI provider config.
+
+- **`lib/repositories/workspace.repository.ts`**: `findWorkspaceById`, `getOrCreateDefaultWorkspace`, `listWorkspaceMembers`, `listAllUsers`, `isWorkspaceMember`, `addWorkspaceMember`.
+- **`lib/repositories/workspace-ai-config.repository.ts`**: `findWorkspaceAiConfig`, `listWorkspaceAiConfigs`, `upsertWorkspaceAiConfig`. Stores per-workspace, per-provider config; API key is stored only in encrypted form (see below).
+- **`lib/ai/get-workspace-provider-config.ts`**: `getDecryptedWorkspaceProviderConfig(workspaceId, providerId)` returns decrypted config for use at AI call sites. Server-only; never expose decrypted keys to the client.
+
+**Encrypted secret storage (prototype):**
+
+- **`lib/security/encryption.ts`**: AES-256-GCM with random 96-bit IV per encryption. Payload format: `v1:<base64url(iv)>:<base64url(tag)>:<base64url(ciphertext)>`. Master key from `WORKSPACE_SECRETS_MASTER_KEY` (env); if not 32 bytes, key is derived via SHA-256. Only encrypted values are persisted; decryption happens only in server runtime when building provider config.
+- **Production requirement (documented for later):** DB admin must not have access to API keys. Prototype uses app-level encryption with env-managed key. For production: KMS/HSM-backed envelope encryption, key rotation, audit logs for secret access, stricter authN/authZ, and least-privilege ops.
+
+---
+
 # 3. Service Layer
 
 All services live in `lib/services/`. Services contain business logic and orchestrate repository calls, parser invocations, graph operations, and AI engine calls. Services never touch Prisma directly — they go through repositories.
@@ -2260,6 +2275,8 @@ export function estimatePromptTokens(
 
 All mutations use **Next.js Server Actions** (`'use server'`). Read operations use Server Components with direct service calls or API route handlers for client-initiated fetches.
 
+**Prototype identity:** The current user is determined by the `gameplan-user-id` cookie (read in `lib/get-current-user.ts`). If the cookie is missing or invalid, the app falls back to the first user or creates a default user. For prototyping, Settings provides a "Switch user" control that calls `switchCurrentUserAction(userId)`, which sets this cookie so the session acts as the selected user. Production will replace this with a proper auth layer.
+
 ### Zod Schemas
 
 ```typescript
@@ -2480,6 +2497,8 @@ app/actions/
 | | `deleteExportAction` | `exportService.deleteExport` | `z.object({ id: z.string().cuid() })` |
 | `idea-stream.actions.ts` | `createIdeaStreamThreadAction`, `postIdeaStreamMessageAction`, `editIdeaStreamMessageAction`, `deleteIdeaStreamMessageAction`, `markIdeaStreamThreadReadAction`, `finalizeIdeaStreamThreadsAction` | `ideaStreamService.*` | `createIdeaStreamThreadSchema`, etc. |
 | `user.actions.ts` | `updateDisplayNameAction` | `user.repository.updateUserDisplayName` | (formData) |
+| | `createUserAction` | `user.repository.createUser` | (formData: name) — prototype: create new user |
+| | `switchCurrentUserAction` | sets `gameplan-user-id` cookie | (userId) — prototype: act as another user |
 
 ### API Routes (for client-initiated reads & streaming)
 
@@ -3123,3 +3142,7 @@ docs/
     ai-engine.md
     idea-stream.md
 ```
+
+## Change Log
+
+- 2026-02-17: Draft v1.0; schema, repositories, services, parsers, workspace and AI config.

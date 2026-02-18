@@ -11,6 +11,7 @@ export function buildProject(overrides: Partial<Project> = {}): Project {
     genre: 'RPG',
     platform: 'PC',
     status: 'ideation',
+    workspaceId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,

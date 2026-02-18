@@ -112,6 +112,7 @@ export async function getProjectSummary(id: string) {
           gameSystems: true,
           versionPlans: true,
           synthesizedOutputs: true,
+          ideaStreamThreads: true,
         },
       },
     },

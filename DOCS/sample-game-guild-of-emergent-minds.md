@@ -97,3 +97,7 @@ Dependencies you might set later: **Combat Model** depends on **Role System** an
 2. Open the project → **Brainstorms** → **New session** → set Title, Author, Tags; paste the **Content** from section 2.
 3. Use **Synthesize** on that session to get suggested systems, or create **Systems** manually from the table in section 3.
 4. Add **Dependencies** between systems, then create a **Version plan** (e.g. MVP = Role System + Behavior Tree Engine + Combat Model + one pillar).
+
+## Change Log
+
+- 2026-02-17: Sample game copy-paste flow (Guild of Emergent Minds).

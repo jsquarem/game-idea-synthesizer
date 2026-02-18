@@ -36,10 +36,19 @@ export default function SettingsLoading() {
       </Card>
       <Card className="rounded-xl">
         <CardHeader>
-          <Skeleton className="h-6 w-16" />
+          <Skeleton className="h-6 w-20" />
         </CardHeader>
-        <CardContent>
-          <Skeleton className="h-4 w-72" />
+        <CardContent className="space-y-0">
+          <div className="pb-6">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-48 mt-1" />
+            <Skeleton className="h-4 w-full max-w-md mt-4" />
+          </div>
+          <div className="border-t border-border pt-6">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-9 w-full max-w-sm mt-2" />
+            <Skeleton className="h-9 w-16 mt-4" />
+          </div>
         </CardContent>
       </Card>
     </div>

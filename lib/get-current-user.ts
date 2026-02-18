@@ -4,7 +4,7 @@ import {
   getOrCreateDefaultUser,
 } from '@/lib/repositories/user.repository'
 
-const USER_ID_COOKIE = 'gameplan-user-id'
+export const USER_ID_COOKIE = 'gameplan-user-id'
 
 /**
  * Returns the current user id for the request.

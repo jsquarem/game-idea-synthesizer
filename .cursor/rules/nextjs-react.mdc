@@ -1,0 +1,36 @@
+---
+description: React components (Server vs Client), hooks, and patterns to avoid
+globs: app/**/*.tsx, app/**/*.ts, components/**/*.tsx, lib/**/*.ts, store/**/*.ts, hooks/**/*.ts
+alwaysApply: true
+---
+
+# React & Next.js Components
+
+## Components
+
+- Use function components
+- Use Server Components by default
+- Use Client Components only when:
+  - Using browser APIs
+  - Using React state/hooks
+  - Using event handlers
+  - Using Zustand store
+
+## Hooks
+
+- Follow Rules of Hooks
+- Extract reusable logic into custom hooks
+- Avoid unnecessary `useEffect`
+- Avoid derived state when possible
+- Use `useMemo` only for expensive computation
+- Use `useCallback` only when necessary (e.g. memoized children)
+- Avoid premature memoization
+
+## What to Avoid
+
+- Overusing `useEffect`
+- Global client state for server data
+- Excessive memoization
+- Deep prop drilling (use composition or context)
+- Large client components
+- Mixing data fetching into client components

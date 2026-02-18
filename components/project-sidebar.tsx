@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
+  Activity,
   LayoutDashboard,
   Lightbulb,
   MessageCircle,
@@ -25,6 +26,7 @@ const SIDEBAR_STORAGE_KEY = 'gameplan-sidebar-collapsed'
 
 const navItems = [
   { href: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { href: 'activity', label: 'Activity', icon: Activity },
   { href: 'brainstorms', label: 'Brainstorms', icon: Lightbulb },
   { href: 'idea-stream', label: 'Idea Stream', icon: MessageCircle },
   { href: 'systems', label: 'Systems', icon: Boxes },

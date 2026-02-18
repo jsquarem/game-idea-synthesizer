@@ -7,6 +7,49 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships   WorkspaceMembership[]
+  aiConfigs     WorkspaceAiConfig[]
+  projects      Project[]
+
+  @@index([createdAt])
+}
+
+model WorkspaceMembership {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      AppUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+model WorkspaceAiConfig {
+  id               String   @id @default(cuid())
+  workspaceId      String
+  providerId       String
+  encryptedApiKey  String
+  baseUrl          String?
+  defaultModel     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, providerId])
+  @@index([workspaceId])
+}
+
 model Project {
   id          String   @id @default(cuid())
   name        String
@@ -14,22 +57,25 @@ model Project {
   genre       String?
   platform    String?
   status      String   @default("ideation")
+  workspaceId String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  brainstorms           BrainstormSession[]
-  synthesizedOutputs    SynthesizedOutput[]
-  gameSystems           GameSystem[]
-  versionPlans          VersionPlan[]
-  promptHistories       PromptHistory[]
-  exports               Export[]
-  memberships           ProjectMembership[]
-  ideaStreamThreads     IdeaStreamThread[]
-  ideaStreamMessages    IdeaStreamMessage[]
+  workspace            Workspace?           @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  brainstorms          BrainstormSession[]
+  synthesizedOutputs   SynthesizedOutput[]
+  gameSystems          GameSystem[]
+  versionPlans         VersionPlan[]
+  promptHistories      PromptHistory[]
+  exports              Export[]
+  memberships          ProjectMembership[]
+  ideaStreamThreads    IdeaStreamThread[]
+  ideaStreamMessages   IdeaStreamMessage[]
   ideaStreamThreadReads IdeaStreamThreadRead[]
 
   @@index([status])
   @@index([createdAt])
+  @@index([workspaceId])
 }
 
 model AppUser {
@@ -41,6 +87,7 @@ model AppUser {
   updatedAt   DateTime @updatedAt
 
   memberships           ProjectMembership[]
+  workspaceMemberships  WorkspaceMembership[]
   ideaStreamThreads     IdeaStreamThread[]
   ideaStreamMessages    IdeaStreamMessage[]
   ideaStreamThreadReads IdeaStreamThreadRead[]

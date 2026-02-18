@@ -50,4 +50,5 @@ Manages version plans that scope game systems into release targets (v1, v1.1, v2
 - System version auto-increment on plan finalization
 
 ## Change Log
-(Chronological updates)
+
+- 2026-02-17: Doc synced with codebase; current implementation and code mapping.

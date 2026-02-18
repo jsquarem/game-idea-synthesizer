@@ -52,4 +52,5 @@ Builds, maintains, and queries the directed dependency graph between game system
 - Graph diff between version plan snapshots
 
 ## Change Log
-(Chronological updates)
+
+- 2026-02-17: Doc synced with codebase; current implementation and code mapping.

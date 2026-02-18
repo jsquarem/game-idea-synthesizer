@@ -4,13 +4,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useProjectBreadcrumb } from '@/lib/contexts/project-breadcrumb-context'
 
 type BreadcrumbItem = {
   label: string
   href?: string
 }
 
-function getBreadcrumbs(pathname: string): BreadcrumbItem[] {
+function getBreadcrumbs(pathname: string, projectLabel?: string | null): BreadcrumbItem[] {
   const segments = pathname.split('/').filter(Boolean)
   if (segments.length === 0) return [{ label: 'Dashboard', href: '/dashboard' }]
   const items: BreadcrumbItem[] = []
@@ -23,9 +24,15 @@ function getBreadcrumbs(pathname: string): BreadcrumbItem[] {
     } else if (segment === 'projects') {
       items.push({ label: 'Projects', href: '/dashboard' })
     } else if (i === 1 && segments[0] === 'projects') {
-      items.push({ label: '…', href })
+      const projectId = segment
+      items.push({
+        label: projectLabel ?? '…',
+        href: `/projects/${projectId}/overview`,
+      })
     } else if (segment === 'overview') {
       items.push({ label: 'Overview', href })
+    } else if (segment === 'activity') {
+      items.push({ label: 'Activity', href })
     } else if (segment === 'brainstorms') {
       items.push({ label: 'Brainstorms', href })
     } else if (segment === 'systems') {
@@ -38,6 +45,8 @@ function getBreadcrumbs(pathname: string): BreadcrumbItem[] {
       items.push({ label: 'Prompts', href })
     } else if (segment === 'export') {
       items.push({ label: 'Export', href })
+    } else if (segment === 'idea-stream') {
+      items.push({ label: 'Idea Stream', href })
     } else {
       items.push({ label: decodeURIComponent(segment), href })
     }
@@ -52,7 +61,13 @@ type BreadcrumbsProps = {
 
 export function Breadcrumbs({ items: propItems, className }: BreadcrumbsProps) {
   const pathname = usePathname()
-  const items = propItems ?? getBreadcrumbs(pathname)
+  const { project } = useProjectBreadcrumb()
+  const pathSegments = pathname.split('/').filter(Boolean)
+  const projectLabel =
+    pathSegments[0] === 'projects' && pathSegments[1] && project?.projectId === pathSegments[1]
+      ? project.projectName
+      : null
+  const items = propItems ?? getBreadcrumbs(pathname, projectLabel)
 
   if (items.length === 0) return null
 

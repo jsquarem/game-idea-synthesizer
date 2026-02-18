@@ -54,4 +54,5 @@ Generates exportable documents in markdown and JSON formats. Assembles composite
 - Export templates (customizable document structure)
 
 ## Change Log
-(Chronological updates)
+
+- 2026-02-17: Doc synced with codebase; current implementation and code mapping.

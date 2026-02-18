@@ -9,17 +9,18 @@
 
 1. [Introduction](#1-introduction)
 2. [Getting Started](#2-getting-started)
-3. [Dashboard](#3-dashboard)
-4. [Projects](#4-projects)
-5. [Brainstorm Sessions](#5-brainstorm-sessions)
-6. [Idea Stream](#6-idea-stream)
-7. [Game Systems](#7-game-systems)
-8. [Dependencies](#8-dependencies)
-9. [Version Plans](#9-version-plans)
-10. [Prompt History](#10-prompt-history)
-11. [Export](#11-export)
-12. [Core Workflow](#12-core-workflow)
-13. [Glossary](#13-glossary)
+3. [Settings](#3-settings)
+4. [Dashboard](#4-dashboard)
+5. [Projects](#5-projects)
+6. [Brainstorm Sessions](#6-brainstorm-sessions)
+7. [Idea Stream](#7-idea-stream)
+8. [Game Systems](#8-game-systems)
+9. [Dependencies](#9-dependencies)
+10. [Version Plans](#10-version-plans)
+11. [Prompt History](#11-prompt-history)
+12. [Export](#12-export)
+13. [Core Workflow](#13-core-workflow)
+14. [Glossary](#14-glossary)
 
 ---
 
@@ -63,7 +64,32 @@ If this is your first time, you will see a prompt to create your first project.
 
 ---
 
-## 3. Dashboard
+## 3. Settings
+
+Open **Settings** by clicking your profile icon in the top bar. Settings is where you manage your profile, your workspace (members and AI), and—for prototyping—multiple users so you can test multi-user flows (e.g. Idea Stream as different people).
+
+### Profile
+
+- **Display name** — Shown in Idea Stream and other collaboration views. If you leave it blank, the app shows “Creator” for the thread starter and “Responder” for others in each thread.
+- **Avatar color** — A color used for your avatar in Idea Stream and authoring. You can pick a preset or keep the default.
+
+### Workspace
+
+A **workspace** is the container for members and AI configuration. Projects can be linked to a workspace. By default you have one workspace.
+
+- **Members** — The list shows who is in the workspace. To add someone, they must already exist as a user (see *Prototype: user simulation* below). Use **Add [name]** to add an existing user to the workspace. Invite-by-email may be added in a future release.
+- **AI provider and API key** — Choose a provider (OpenAI or Anthropic), enter an API key, and optionally set a base URL and default model. Keys are stored encrypted. This config is used for AI-powered features (e.g. synthesis). Leave the key blank when saving to keep the existing key.
+
+### Prototype: user simulation
+
+For **testing multi-user behavior** (e.g. Idea Stream with two “users” in different browsers or tabs), the app supports creating multiple users and choosing who “this browser” acts as.
+
+- **Active user (this browser)** — A dropdown lists all users. Select a user and click **Use this user in this browser**. From then on, this browser is treated as that user (cookies and session). Other browsers or tabs can act as different users. Use this to simulate multiple people in Idea Stream or other collaboration flows.
+- **Create user** — Under *Create user*, enter a **Name** and click **Create user**. The new user appears in the active-user selector and can be added to the workspace. There is no email/password; this is for prototype simulation only.
+
+---
+
+## 4. Dashboard
 
 The dashboard is the landing page of GamePlan AI, accessible at the root URL.
 
@@ -85,7 +111,7 @@ Click any project card to open that project's **Overview** page.
 
 ---
 
-## 4. Projects
+## 5. Projects
 
 A project is the top-level container for everything in GamePlan AI. Each project holds its own brainstorm sessions, game systems, dependencies, version plans, prompt history, and exports.
 
@@ -129,7 +155,7 @@ A breadcrumb trail at the top always shows your current location and lets you na
 
 ---
 
-## 5. Brainstorm Sessions
+## 6. Brainstorm Sessions
 
 Brainstorm sessions are where raw creative input lives. They are immutable records of your ideation -- paste a Discord thread, write freeform notes, or upload content.
 
@@ -164,11 +190,11 @@ Click any session from the list to view its details:
 
 On a session's detail page, use the **Delete** button. You will be asked to confirm before the session is permanently removed.
 
-You can also create a brainstorm session by **finalizing** threads from Idea Stream (see [Idea Stream](#6-idea-stream)).
+You can also create a brainstorm session by **finalizing** threads from Idea Stream (see [Idea Stream](#7-idea-stream)).
 
 ---
 
-## 6. Idea Stream
+## 7. Idea Stream
 
 Idea Stream is a lightweight, always-open collaboration space per project. Use it to discuss ideas in threads, then turn selected threads into a brainstorm session and run synthesis.
 
@@ -192,13 +218,13 @@ You can edit or delete only your own messages. Use the **Edit** or **Delete** ac
 
 Select one or more threads using the checkboxes in the left panel. Click **Finalize + Synthesize**. The app generates a Brainstorm Session containing the full thread content (in markdown), then opens the synthesis flow so you can extract systems from that session.
 
-### Display Name
+### Display name and avatar
 
-Click your profile icon in the top bar to open **Settings**. Under **Profile**, set a **Display name**. It is shown in Idea Stream and other collaboration views. If you leave it blank, the app shows “Creator” for the thread starter and “Responder” for others in each thread.
+Your **display name** and **avatar** are set in [Settings](#3-settings) under Profile. If you leave display name blank, the app shows “Creator” for the thread starter and “Responder” for others in each thread.
 
 ---
 
-## 7. Game Systems
+## 8. Game Systems
 
 A game system is a distinct gameplay subsystem (e.g., Movement, Combat, Health, Inventory, Economy, Crafting, Progression). Systems are the core building blocks of your game design documentation.
 
@@ -255,7 +281,7 @@ On a system's detail page, use the **Delete** button with confirmation.
 
 ---
 
-## 8. Dependencies
+## 9. Dependencies
 
 Dependencies define the relationships between game systems. For example, a Combat system might depend on Health and Movement systems. Understanding these relationships is critical for planning implementation order.
 
@@ -292,7 +318,7 @@ A form at the bottom lets you create new dependencies:
 
 ---
 
-## 9. Version Plans
+## 10. Version Plans
 
 Version plans let you scope which systems belong to a specific release (e.g., v1, v1.1, v2). They validate that all required dependencies are included and generate phased implementation sequences.
 
@@ -331,7 +357,7 @@ Clicking **Finalize** on a draft plan marks it as finalized. Finalized plans:
 
 ---
 
-## 10. Prompt History
+## 11. Prompt History
 
 The Prompts section tracks AI prompt interactions associated with your project.
 
@@ -349,7 +375,7 @@ The **New Prompt** page provides access to the AI prompt generator for creating 
 
 ---
 
-## 11. Export
+## 12. Export
 
 The Export section lets you generate downloadable documents from your project data.
 
@@ -380,7 +406,7 @@ Click **Download** to save the file to your computer.
 
 ---
 
-## 12. Core Workflow
+## 13. Core Workflow
 
 Here is the recommended workflow for using GamePlan AI from start to finish:
 
@@ -422,7 +448,7 @@ The goal is to go from raw brainstorm to a structured, dependency-aware implemen
 
 ---
 
-## 13. Glossary
+## 14. Glossary
 
 | Term | Definition |
 |---|---|
@@ -441,3 +467,9 @@ The goal is to go from raw brainstorm to a structured, dependency-aware implemen
 | **PRD** | Product Requirements Document -- a scoped document for a specific version. |
 | **Synthesis** | The AI-powered process of converting raw brainstorm text into structured system definitions. |
 | **Prompt Bundle** | A packaged collection of AI prompts with context, ready for use with external AI tools. |
+| **Workspace** | Container for members and AI provider configuration; projects can be linked to a workspace. |
+| **Active user** | In prototype mode, the user that this browser is currently acting as (for testing multi-user flows). |
+
+---
+
+*Change log: 2026-02-18 — Added Section 3 Settings (Profile, Workspace members and AI config, Prototype user creation and switch). Renumbered sections 3–14. Glossary: Workspace, Active user.*

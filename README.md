@@ -24,7 +24,10 @@ Documentation-first game design and system planning. Turn brainstorming into str
 
    ```
    DATABASE_URL="file:./dev.db"
+   WORKSPACE_SECRETS_MASTER_KEY="your-32-byte-hex-or-passphrase"
    ```
+
+   `WORKSPACE_SECRETS_MASTER_KEY` is used to encrypt workspace AI API keys at rest. Use a 32-byte hex string, or any passphrase (it will be hashed to 32 bytes). Omit only if you do not use workspace AI config in settings.
 
 3. **Database**
 
@@ -72,7 +75,7 @@ The app runs on port 3000. SQLite data is stored in a volume. On first run you m
 - `app/` — Next.js App Router (dashboard, projects, brainstorms, systems, dependencies, versions, prompts, export)
 - `lib/` — Repositories, services, parsers, graph engine, validations, actions
 - `prisma/` — Schema and migrations
-- `docs/app-systems/` — Subsystem documentation (ingestion, system-extraction, dependency-graph, doc-store, versioning, export-engine, ai-engine)
+- `DOCS/app-systems/` — Subsystem documentation (ingestion, system-extraction, dependency-graph, doc-store, versioning, export-engine, ai-engine, workspace)
 
 ## Docs
 
@@ -80,3 +83,7 @@ See `DOCS/` for:
 
 - Product and architecture (PRD, design, frontend/backend, QA)
 - User Manual
+
+## Change Log
+
+- 2026-02-17: Setup, scripts, structure, workspace AI config env.

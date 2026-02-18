@@ -1,6 +1,7 @@
 import { TopBar } from '@/components/top-bar'
 import { getCurrentUserId } from '@/lib/get-current-user'
 import { findUserById } from '@/lib/repositories/user.repository'
+import { ProjectBreadcrumbProvider } from '@/lib/contexts/project-breadcrumb-context'
 
 export default async function AppLayout({
   children,
@@ -18,9 +19,11 @@ export default async function AppLayout({
           avatarColor: user.avatarColor,
         }
   return (
-    <div className="flex min-h-screen flex-col">
-      <TopBar user={userForBar} />
-      <main className="flex-1 overflow-auto">{children}</main>
-    </div>
+    <ProjectBreadcrumbProvider>
+      <div className="flex min-h-screen flex-col">
+        <TopBar user={userForBar} />
+        <main className="flex-1 overflow-auto">{children}</main>
+      </div>
+    </ProjectBreadcrumbProvider>
   )
 }

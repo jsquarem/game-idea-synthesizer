@@ -120,11 +120,13 @@ Lightweight, always-open collaboration space per project. See `plans/collab-impl
 | Element                  | Description                                                  |
 |--------------------------|--------------------------------------------------------------|
 | Project header           | Name, genre badge, platform badge, status badge              |
-| Quick-stats row          | Brainstorm count, System count, Dependency count, Plan count |
-| Recent activity timeline | Last 10 actions across all sub-sections                      |
+| Quick-stats row          | Brainstorm count, System count, Idea Stream (thread count), Dependencies, Plan count |
+| Recent activity timeline | Last 10 thread activities; "View full history" links to Activity page |
 | Quick actions            | "New Brainstorm", "New System", "Generate Plan"              |
 | Project settings gear    | Opens project edit drawer                                    |
 | Dependency mini-graph    | Small, non-interactive preview of dependency graph           |
+
+Activity page (`/projects/:projectId/activity`): Full project activity history (brainstorms, systems, idea stream threads, exports, version plans, dependencies), merged and sorted by date; Load more for pagination; linked from overview and sidebar. Breadcrumbs: Projects > {project name} > current page; project name links to overview.
 
 ### 1.3.5 Brainstorms List (`/projects/:projectId/brainstorms`)
 
@@ -324,7 +326,10 @@ This is a **multi-step wizard**:
 
 | Element              | Description                                         |
 |----------------------|-----------------------------------------------------|
+| **Switch user** (prototype) | Dropdown to act as another user; sets session cookie. Production uses auth. |
+| **Create user** (prototype) | Name field; creates new app user for testing multi-user flows. |
 | Profile              | **Display name** — shown in Idea Stream and collaboration views; leave blank to use Creator/Responder per thread. |
+| Workspace members    | List members; add existing users to workspace.      |
 | AI Provider config   | Provider select (OpenAI / Claude / Gemini), API key input, model select |
 | Theme toggle         | Light / Dark / System                               |
 | Default project settings | Default genre, platform presets                  |
@@ -1369,3 +1374,9 @@ All persistent data (projects, systems, brainstorms, plans, prompts) lives serve
 | Dialog focus trap                     | Radix handles via Shadcn AlertDialog/Dialog          |
 | Skip navigation                       | Skip-to-content link on app shell                    |
 | Status announcements                  | `aria-live="polite"` for toast notifications         |
+
+## Change Log
+
+- 2026-02-17: Draft v1.1; site map, navigation, flows, design tokens.
+- 2026-02-18: Overview quick-stats include Idea Stream (thread count); recent activity shows thread activity and links to Activity page; Activity route added; breadcrumbs show project name and link to overview.
+- 2026-02-18: Activity page shows all project activity types (brainstorms, systems, threads, exports, version plans, dependencies) in a single timeline.

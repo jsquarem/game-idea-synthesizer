@@ -1,0 +1,35 @@
+---
+description: Data fetching, Server Actions, and state management
+globs: app/**/*.tsx, app/**/*.ts, components/**/*.tsx, lib/**/*.ts, store/**/*.ts, hooks/**/*.ts
+alwaysApply: true
+---
+
+# Data Fetching & State
+
+## Server Components
+
+- Fetch directly inside Server Components
+- Use async components
+- Use native `fetch` with `revalidate` or `cache` options explicitly
+- Prefer static rendering when possible
+
+```ts
+export default async function Page() {
+  const data = await fetch(url, { cache: 'no-store' }).then(r => r.json())
+  return <Component data={data} />
+}
+```
+
+## Server Actions
+
+- Use for mutations
+- Validate input using Zod
+- Model expected errors as return values
+- Keep actions colocated with components when possible
+
+## State Management
+
+- Use Zustand for global client state
+- Keep server state on the server
+- Do not duplicate server data into global state
+- Lift state only when necessary

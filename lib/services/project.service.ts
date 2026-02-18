@@ -17,6 +17,11 @@ import type {
 } from '../repositories/project.repository'
 import { getProjectCountsByStatus as getProjectCountsByStatusRepo } from '../repositories/project.repository'
 import { listDependenciesByProject } from '../repositories/dependency.repository'
+import {
+  listProjectActivity,
+  getLatestActivityPerType,
+  type ProjectActivityItem,
+} from '../repositories/project-activity.repository'
 
 export async function createProject(
   input: CreateProjectInput
@@ -111,6 +116,7 @@ export async function getProjectDashboard(id: string): Promise<
     versionPlanCount: number
     synthesizedOutputCount: number
     dependencyCount: number
+    threadCount: number
   }>
 > {
   const project = await findProjectById(id)
@@ -127,12 +133,59 @@ export async function getProjectDashboard(id: string): Promise<
         versionPlanCount: summary._count.versionPlans,
         synthesizedOutputCount: summary._count.synthesizedOutputs,
         dependencyCount: deps.length,
+        threadCount: summary._count.ideaStreamThreads,
       },
     }
   } catch (e) {
     return {
       success: false,
       error: e instanceof Error ? e.message : 'Failed to load dashboard',
+      code: 'INTERNAL',
+    }
+  }
+}
+
+export type ProjectActivityResult = {
+  items: ProjectActivityItem[]
+  nextCursor: string | null
+}
+
+export async function getProjectActivity(
+  projectId: string,
+  limit: number,
+  cursor?: string
+): Promise<ServiceResult<ProjectActivityResult>> {
+  const project = await findProjectById(projectId)
+  if (!project) return { success: false, error: 'Project not found', code: 'NOT_FOUND' }
+  try {
+    const beforeDate = cursor ? new Date(cursor) : undefined
+    const items = await listProjectActivity(projectId, limit, beforeDate)
+    const nextCursor =
+      items.length >= limit && items.length > 0
+        ? items[items.length - 1].occurredAt.toISOString()
+        : null
+    return { success: true, data: { items, nextCursor } }
+  } catch (e) {
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : 'Failed to load activity',
+      code: 'INTERNAL',
+    }
+  }
+}
+
+export async function getOverviewRecentActivity(
+  projectId: string
+): Promise<ServiceResult<ProjectActivityItem[]>> {
+  const project = await findProjectById(projectId)
+  if (!project) return { success: false, error: 'Project not found', code: 'NOT_FOUND' }
+  try {
+    const items = await getLatestActivityPerType(projectId)
+    return { success: true, data: items }
+  } catch (e) {
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : 'Failed to load recent activity',
       code: 'INTERNAL',
     }
   }

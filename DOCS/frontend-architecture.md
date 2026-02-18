@@ -101,7 +101,9 @@ app/
 │   │           └── page.tsx           # Export hub — choose format + scope (Server + Client form)
 │   │
 │   └── settings/
-│       └── page.tsx                   # App settings — AI provider keys, preferences (Server + Client form)
+│       ├── layout.tsx                 # Container padding (px-4 py-6 md:px-6 lg:px-8, max-w-7xl)
+│       ├── page.tsx                  # Settings — Profile, Workspace, Prototype cards (Server + Client forms)
+│       └── loading.tsx               # Settings loading skeleton
 ```
 
 ## 1.2 Route Group Rationale
@@ -128,13 +130,14 @@ app/
 | `(app)/projects/[projectId]/systems/[systemId]/edit/page.tsx` | **Server** shell + **Client** editor | Editor requires full client interactivity |
 | `(app)/projects/[projectId]/dependencies/page.tsx` | **Server** shell + **Client** graph | Graph visualization is entirely client-rendered |
 | `(app)/projects/[projectId]/idea-stream/page.tsx` | **Server** shell + **Client** content | Idea Stream: thread list, messages, reply/edit/delete, finalize → brainstorm (client island; polling) |
+| `(app)/projects/[projectId]/activity/page.tsx` | **Server** + **Client** list | Full project activity history (thread activity, Load more) |
 | `(app)/projects/[projectId]/versions/page.tsx` | **Server** | List page |
 | `(app)/projects/[projectId]/versions/new/page.tsx` | **Server** shell + **Client** form | System selection checkboxes, AI generation |
 | `(app)/projects/[projectId]/versions/[versionId]/page.tsx` | **Server** | Read-only immutable snapshot |
 | `(app)/projects/[projectId]/prompts/page.tsx` | **Server** | List page |
 | `(app)/projects/[projectId]/prompts/[promptId]/page.tsx` | **Server** | Read-only prompt + response |
 | `(app)/projects/[projectId]/export/page.tsx` | **Server** shell + **Client** form | Format selection, download triggers |
-| `(app)/settings/page.tsx` | **Server** shell + **Client** form | API key input, preference toggles |
+| `(app)/settings/page.tsx` | **Server** shell + **Client** form | Three cards: Profile (avatar, display name), Workspace (members, AI provider config), Prototype (active-user selector + “Use this user in this browser” button, create-user form); container padding via settings layout |
 
 ## 1.4 Dynamic Segments
 
@@ -210,9 +213,10 @@ interface ProjectSidebarProps {
   projectId: string
 }
 ```
-Nav items: Overview, Brainstorms, **Idea Stream**, Systems, Dependencies, Versions, Prompts, Export. Uses `usePathname()` for active state. Mobile: Sheet drawer with hamburger trigger.
+Nav items: Overview, Activity, Brainstorms, Idea Stream, Systems, Dependencies, Versions, Prompts, Export. Uses `usePathname()` for active state. Mobile: Sheet drawer with hamburger trigger.
 
-#### `components/breadcrumbs.tsx` — **Server** (or Client)
+#### `components/breadcrumbs.tsx` — **Client**
+Breadcrumbs derived from pathname; project segment shows project name (from ProjectBreadcrumbContext set by project layout) and links to overview.
 Dynamic breadcrumb trail from URL segments (e.g. Projects > Project Name > Section).
 
 #### `components/command-palette.tsx` — **Client** (optional)
@@ -680,7 +684,7 @@ interface DataTableProps<T> {
 | `projects/[projectId]/dependencies/` | `_components/graph-panel.tsx` (Client) — wraps graph + sidebar detail panel |
 | `projects/[projectId]/versions/new/` | `_components/version-wizard.tsx` (Client) — multi-step version plan creation wizard |
 | `projects/[projectId]/export/` | `_components/export-preview.tsx` (Client) — live preview of export output |
-| `settings/` | `settings-display-name-form.tsx` (Client) — display name for Idea Stream / profile |
+| `settings/` | `settings-switch-user-select.tsx` (Client) — prototype: select user + “Use this user in this browser” button; `settings-create-user-form.tsx` (Client) — prototype: create new user by name; `settings-display-name-form.tsx` (Client) — display name for Idea Stream / profile; `settings-workspace-members-form.tsx` in Workspace card |
 
 ---
 
@@ -2090,3 +2094,8 @@ game-idea-synthesizer/
 ├── .gitignore
 └── README.md
 ```
+
+## Change Log
+
+- 2026-02-17: Initial system definition; routes, components, state, data flow, markdown, dependency graph.
+- 2026-02-18: Activity page (`projects/[projectId]/activity`); Activity in sidebar nav; breadcrumbs use ProjectBreadcrumbContext for project name and overview link.

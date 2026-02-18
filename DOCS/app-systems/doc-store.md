@@ -45,4 +45,5 @@ Provides the persistence layer for all application data. Abstracts database acce
 - Backup/restore utilities
 
 ## Change Log
-(Chronological updates)
+
+- 2026-02-17: Doc synced with codebase; current implementation and code mapping.

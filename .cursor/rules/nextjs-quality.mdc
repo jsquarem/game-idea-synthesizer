@@ -1,0 +1,54 @@
+---
+description: Performance, errors, forms, a11y, security, i18n, URL state, testing
+globs: app/**/*.tsx, app/**/*.ts, components/**/*.tsx, lib/**/*.ts, store/**/*.ts, hooks/**/*.ts
+alwaysApply: true
+---
+
+# Quality: Performance, Errors, Forms, A11y, Security, Testing
+
+## Performance
+
+- Minimize `'use client'`
+- Avoid unnecessary client-side data fetching
+- Use streaming where beneficial
+- Use `next/image` with explicit image sizes
+- Use dynamic imports via `next/dynamic` when needed
+- Optimize for Core Web Vitals: LCP, CLS, INP, TTFB
+
+## Error Handling
+
+- Use `error.tsx` per route segment; `not-found.tsx` when appropriate
+- Use guard clauses; log server errors
+- Return safe, typed error responses from Server Actions
+
+## Forms & Validation
+
+- Prefer Server Actions for forms; validate with Zod
+- Use `react-hook-form` only when complex client validation is required
+- Keep forms progressively enhanced
+
+## Accessibility
+
+- Use semantic HTML and Radix primitives
+- Ensure keyboard navigation and focus visibility
+- Use proper ARIA attributes when necessary
+
+## Security
+
+- Validate all inputs (Zod on server); never trust client data
+- Avoid `dangerouslySetInnerHTML`; sanitize any rendered HTML
+- Use HTTP-only cookies for auth
+
+## Internationalization & URL State
+
+- Use Next.js built-in i18n routing; keep translations server-side when possible
+- Use `nuqs` for search param state; avoid duplicating URL state in local state
+
+## Testing
+
+- Use Vitest or Jest for unit tests; React Testing Library
+- Test behavior, not implementation; Playwright for e2e
+
+## Follow Official Docs
+
+Always align with Next.js App Router docs, React Server Components architecture, and latest Next.js release notes.

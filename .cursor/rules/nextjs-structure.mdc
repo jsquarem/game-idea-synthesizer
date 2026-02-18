@@ -1,0 +1,27 @@
+---
+description: Next.js App Router project structure and colocation
+globs: app/**/*.tsx, app/**/*.ts, components/**/*.tsx, lib/**/*.ts, store/**/*.ts, hooks/**/*.ts
+alwaysApply: true
+---
+
+# Project Structure (App Router)
+
+```
+app/
+  layout.tsx
+  page.tsx
+  loading.tsx
+  error.tsx
+  not-found.tsx
+  (routes)/
+components/
+lib/
+store/
+hooks/
+styles/
+```
+
+- Route segments use lowercase with dashes
+- Colocate route-specific components inside route folders
+- Shared components go in `/components`
+- Server utilities go in `/lib`

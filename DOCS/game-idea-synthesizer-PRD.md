@@ -548,3 +548,7 @@ Built in a way that:
 - Is modular
 - Is iteration-friendly
 - Does not collapse under its own abstraction
+
+## Change Log
+
+- 2026-02-17: PRD aligned with current scope and app-systems.
