@@ -24,7 +24,7 @@ export function SystemForm({ projectId, system, createAction, updateAction }: Pr
         : undefined
 
   return (
-    <form action={formAction} method="post" className="space-y-4">
+    <form id="system-form" action={formAction} method="post" className="space-y-4">
       {!isCreate && (
         <input type="hidden" name="changeSummary" value="Updated via form" />
       )}

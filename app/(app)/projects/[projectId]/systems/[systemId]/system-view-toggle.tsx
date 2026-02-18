@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
 import type { GameSystemWithRelations } from '@/lib/repositories/game-system.repository'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card, CardContent } from '@/components/ui/card'
+
 type Props = {
   system: GameSystemWithRelations
   projectId: string
@@ -21,49 +23,32 @@ export function SystemViewToggle({
   updateAction,
   formComponent,
 }: Props) {
-  const [mode, setMode] = useState<'form' | 'markdown'>('form')
   const markdown = system.markdownContent ?? ''
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => setMode('form')}
-          className={`rounded-md border px-3 py-1.5 text-sm ${
-            mode === 'form' ? 'border-primary bg-primary/10' : 'border-input hover:bg-muted'
-          }`}
+    <Tabs defaultValue="structured" className="w-full">
+      <TabsList className="grid w-full max-w-[280px] grid-cols-2">
+        <TabsTrigger value="structured">Structured</TabsTrigger>
+        <TabsTrigger value="markdown">Markdown</TabsTrigger>
+      </TabsList>
+      <TabsContent value="structured" className="mt-4">
+        {formComponent}
+      </TabsContent>
+      <TabsContent value="markdown" className="mt-4">
+        <form
+          action={(formData: FormData) => updateAction(projectId, systemId, formData)}
+          className="space-y-4"
         >
-          Form view
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode('markdown')}
-          className={`rounded-md border px-3 py-1.5 text-sm ${
-            mode === 'markdown' ? 'border-primary bg-primary/10' : 'border-input hover:bg-muted'
-          }`}
-        >
-          Markdown view
-        </button>
-      </div>
-
-      {mode === 'form' ? (
-        formComponent
-      ) : (
-        <div className="space-y-4">
-          <form
-            action={(formData: FormData) => updateAction(projectId, systemId, formData)}
-            className="space-y-4"
-          >
-            <input type="hidden" name="changeSummary" value="Updated from markdown" />
-            <input type="hidden" name="name" value={system.name} />
-            <input type="hidden" name="version" value={system.version} />
-            <input type="hidden" name="status" value={system.status} />
-            <input type="hidden" name="purpose" value={system.purpose ?? ''} />
-            <input type="hidden" name="mvpCriticality" value={system.mvpCriticality} />
-            <div>
-              <label htmlFor="md" className="mb-1 block text-sm font-medium">
-                Markdown (read-only in this view; edit via Form view)
+          <input type="hidden" name="changeSummary" value="Updated from markdown" />
+          <input type="hidden" name="name" value={system.name} />
+          <input type="hidden" name="version" value={system.version} />
+          <input type="hidden" name="status" value={system.status} />
+          <input type="hidden" name="purpose" value={system.purpose ?? ''} />
+          <input type="hidden" name="mvpCriticality" value={system.mvpCriticality} />
+          <Card>
+            <CardContent className="pt-6">
+              <label htmlFor="md" className="mb-2 block text-sm font-medium">
+                Markdown (read-only; edit via Structured view)
               </label>
               <pre
                 id="md"
@@ -71,10 +56,10 @@ export function SystemViewToggle({
               >
                 {markdown || '(No markdown content)'}
               </pre>
-            </div>
-          </form>
-        </div>
-      )}
-    </div>
+            </CardContent>
+          </Card>
+        </form>
+      </TabsContent>
+    </Tabs>
   )
 }

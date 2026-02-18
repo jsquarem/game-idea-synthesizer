@@ -1,6 +1,7 @@
 'use client'
 
 import { useTransition } from 'react'
+import { Button } from '@/components/ui/button'
 
 type Props = {
   projectId: string
@@ -12,17 +13,18 @@ export function DeleteSystemButton({ projectId, systemId, deleteAction }: Props)
   const [isPending, startTransition] = useTransition()
 
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
+      className="border-destructive/50 text-destructive hover:bg-destructive/10"
       onClick={() => {
         if (confirm('Delete this system? This cannot be undone.')) {
           startTransition(() => deleteAction(projectId, systemId))
         }
       }}
       disabled={isPending}
-      className="rounded-md border border-destructive/50 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
     >
       {isPending ? 'Deleting…' : 'Delete'}
-    </button>
+    </Button>
   )
 }
