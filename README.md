@@ -33,6 +33,12 @@ Documentation-first game design and system planning. Turn brainstorming into str
    npx prisma db push
    ```
 
+   Optionally seed the sample game (Guild of Emergent Minds: project, brainstorm, 7 systems, dependencies):
+
+   ```bash
+   npm run db:seed
+   ```
+
 4. **Run**
 
    ```bash
@@ -50,6 +56,7 @@ Documentation-first game design and system planning. Turn brainstorming into str
 - `npm run test` — Unit/integration tests (Vitest)
 - `npm run test:e2e` — E2E tests (Playwright; run `npx playwright install` first)
 - `npm run db:studio` — Open Prisma Studio
+- `npm run db:seed` — Seed sample game (Guild of Emergent Minds); skips if already present
 
 ## Docker
 
