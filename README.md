@@ -79,3 +79,4 @@ The app runs on port 3000. SQLite data is stored in a volume. On first run you m
 See `DOCS/` for:
 
 - Product and architecture (PRD, design, frontend/backend, QA)
+- User Manual
