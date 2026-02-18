@@ -2436,12 +2436,14 @@ All server actions live in `app/actions/`.
 app/actions/
   project.actions.ts
   brainstorm.actions.ts
+  idea-stream.actions.ts
   synthesis.actions.ts
   game-system.actions.ts
   dependency.actions.ts
   version-plan.actions.ts
   prompt.actions.ts
   export.actions.ts
+  user.actions.ts
 ```
 
 | Action File | Action Function | Service Call | Zod Schema |
@@ -2476,6 +2478,8 @@ app/actions/
 | | `reExecutePromptAction` | `promptService.reExecutePrompt` | `z.object({ historyId: z.string().cuid() })` |
 | `export.actions.ts` | `generateExportAction` | `exportService.generateExport` | `exportSchema` |
 | | `deleteExportAction` | `exportService.deleteExport` | `z.object({ id: z.string().cuid() })` |
+| `idea-stream.actions.ts` | `createIdeaStreamThreadAction`, `postIdeaStreamMessageAction`, `editIdeaStreamMessageAction`, `deleteIdeaStreamMessageAction`, `markIdeaStreamThreadReadAction`, `finalizeIdeaStreamThreadsAction` | `ideaStreamService.*` | `createIdeaStreamThreadSchema`, etc. |
+| `user.actions.ts` | `updateDisplayNameAction` | `user.repository.updateUserDisplayName` | (formData) |
 
 ### API Routes (for client-initiated reads & streaming)
 
@@ -2485,6 +2489,14 @@ app/api/
     route.ts                    GET: list projects
     [id]/
       route.ts                  GET: get project + dashboard
+    [projectId]/
+      idea-stream/
+        threads/
+          route.ts              GET: list threads (polling)
+          [threadId]/messages/
+            route.ts            GET: list messages (polling)
+  me/
+    route.ts                    GET: current user id (for Idea Stream client)
   brainstorms/
     [id]/
       route.ts                  GET: get brainstorm with synthesis
@@ -2535,7 +2547,7 @@ Each API route handler:
 
 # 8. Application Subsystem Documentation
 
-Content outlines for each of the 7 app subsystem spec docs in `docs/app-systems/`.
+Content outlines for each of the 8 app subsystem spec docs in `docs/app-systems/`.
 
 ---
 
@@ -2969,6 +2981,38 @@ Provides a provider-agnostic interface for AI completion calls. Manages prompt t
 
 ---
 
+## 8.8 `docs/app-systems/idea-stream.md`
+
+```markdown
+# System: Idea Stream
+
+## Purpose
+Lightweight per-project collaboration: threads and replies; finalize selected threads into a Brainstorm Session for synthesis.
+
+## Responsibilities
+- Thread and message CRUD; read-state tracking; project membership authz
+- Finalize: build markdown from threads, create BrainstormSession (source idea-stream), redirect to synthesize
+- User identity (display name, avatar); Creator/Responder when no display name
+
+## Inputs
+- Project + current user; thread/message create and edit/delete; finalize (thread_ids, optional title/author)
+
+## Outputs
+- IdeaStreamThread, IdeaStreamMessage, IdeaStreamThreadRead; on finalize: BrainstormSession
+
+## Dependencies
+- doc-store; ingestion (consumes finalize output)
+
+## Code Mapping
+- lib/services/idea-stream.service.ts, lib/repositories/idea-stream.repository.ts, lib/get-current-user.ts
+- app/actions/idea-stream.actions.ts, app/actions/user.actions.ts
+- app/api/projects/[projectId]/idea-stream/..., app/api/me
+- app/(app)/projects/[projectId]/idea-stream/
+```
+(See full doc for Current Implementation, Known Limitations, Target Evolution, Change Log.)
+
+---
+
 # Appendix: Directory Structure Overview
 
 ```
@@ -3077,4 +3121,5 @@ docs/
     versioning.md
     export-engine.md
     ai-engine.md
+    idea-stream.md
 ```

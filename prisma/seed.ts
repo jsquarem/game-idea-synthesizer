@@ -61,9 +61,25 @@ const SYSTEMS = [
 const PROJECT_NAME = 'Guild of Emergent Minds'
 
 async function main() {
+  let appUser = await prisma.appUser.findFirst()
+  if (!appUser) {
+    appUser = await prisma.appUser.create({
+      data: { displayName: 'User', email: null, avatarColor: null },
+    })
+    console.log('Created default AppUser:', appUser.id)
+  }
+
   let project = await prisma.project.findFirst({ where: { name: PROJECT_NAME } })
   if (project) {
-    console.log('Sample project already exists:', project.id)
+    const membership = await prisma.projectMembership.findUnique({
+      where: { projectId_userId: { projectId: project.id, userId: appUser.id } },
+    })
+    if (!membership) {
+      await prisma.projectMembership.create({
+        data: { projectId: project.id, userId: appUser.id },
+      })
+      console.log('Added default user to existing project')
+    }
     return
   }
 
@@ -134,6 +150,10 @@ async function main() {
       },
     })
   }
+
+  await prisma.projectMembership.create({
+    data: { projectId: project.id, userId: appUser.id },
+  })
 
   console.log('Seeded: project', project.id, 'brainstorm', brainstorm.id, 'systems', SYSTEMS.length)
 }

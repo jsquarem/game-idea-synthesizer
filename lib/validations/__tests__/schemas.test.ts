@@ -5,6 +5,10 @@ import {
   createBrainstormSessionSchema,
   createVersionPlanSchema,
   createDependencyEdgeSchema,
+  createIdeaStreamThreadSchema,
+  postIdeaStreamMessageSchema,
+  editIdeaStreamMessageSchema,
+  finalizeIdeaStreamThreadsSchema,
 } from '../schemas'
 
 describe('Zod schemas', () => {
@@ -262,6 +266,83 @@ describe('Zod schemas', () => {
         )
         expect(hasRefinementError).toBe(true)
       }
+    })
+  })
+
+  describe('Idea Stream schemas', () => {
+    describe('createIdeaStreamThreadSchema', () => {
+      it('should accept valid thread input', () => {
+        const result = createIdeaStreamThreadSchema.safeParse({
+          projectId: 'proj-1',
+          content: ' First message content ',
+        })
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.content).toBe('First message content')
+        }
+      })
+
+      it('should reject empty content', () => {
+        const result = createIdeaStreamThreadSchema.safeParse({
+          projectId: 'proj-1',
+          content: '   ',
+        })
+        expect(result.success).toBe(false)
+      })
+
+      it('should reject content over 10000 chars', () => {
+        const result = createIdeaStreamThreadSchema.safeParse({
+          projectId: 'proj-1',
+          content: 'x'.repeat(10001),
+        })
+        expect(result.success).toBe(false)
+      })
+    })
+
+    describe('postIdeaStreamMessageSchema', () => {
+      it('should accept valid message with optional parent', () => {
+        const result = postIdeaStreamMessageSchema.safeParse({
+          projectId: 'proj-1',
+          threadId: 'thread-1',
+          content: ' Reply content ',
+          parentMessageId: 'msg-1',
+        })
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.content).toBe('Reply content')
+          expect(result.data.parentMessageId).toBe('msg-1')
+        }
+      })
+    })
+
+    describe('editIdeaStreamMessageSchema', () => {
+      it('should accept valid edit', () => {
+        const result = editIdeaStreamMessageSchema.safeParse({
+          messageId: 'msg-1',
+          content: ' Updated content ',
+        })
+        expect(result.success).toBe(true)
+        if (result.success) expect(result.data.content).toBe('Updated content')
+      })
+    })
+
+    describe('finalizeIdeaStreamThreadsSchema', () => {
+      it('should accept valid finalize input', () => {
+        const result = finalizeIdeaStreamThreadsSchema.safeParse({
+          projectId: 'proj-1',
+          threadIds: ['thread-1', 'thread-2'],
+          title: 'My Session',
+        })
+        expect(result.success).toBe(true)
+      })
+
+      it('should reject empty threadIds', () => {
+        const result = finalizeIdeaStreamThreadsSchema.safeParse({
+          projectId: 'proj-1',
+          threadIds: [],
+        })
+        expect(result.success).toBe(false)
+      })
     })
   })
 })

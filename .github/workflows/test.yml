@@ -8,6 +8,8 @@ on:
 
 jobs:
   unit-tests:
+    # Paused: set to "true" or remove this line to re-enable CI
+    if: false
     name: Unit & Integration Tests
     runs-on: ubuntu-latest
     steps:

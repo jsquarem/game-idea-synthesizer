@@ -9,6 +9,7 @@ export type CreateBrainstormInput = {
   content: string
   author?: string
   tags?: string[]
+  sourceThreadIds?: string[]
 }
 
 export type BrainstormFilter = {
@@ -21,6 +22,9 @@ const DEFAULT_PAGE_SIZE = 20
 
 export async function createBrainstorm(data: CreateBrainstormInput): Promise<BrainstormSession> {
   const tagsStr = data.tags ? JSON.stringify(data.tags) : null
+  const sourceThreadIdsStr = data.sourceThreadIds
+    ? JSON.stringify(data.sourceThreadIds)
+    : null
   return prisma.brainstormSession.create({
     data: {
       projectId: data.projectId,
@@ -29,6 +33,7 @@ export async function createBrainstorm(data: CreateBrainstormInput): Promise<Bra
       content: data.content,
       author: data.author,
       tags: tagsStr,
+      sourceThreadIds: sourceThreadIdsStr,
     },
   })
 }

@@ -11,6 +11,7 @@ export type ServiceResult<T> =
         | 'AI_ERROR'
         | 'CYCLE_DETECTED'
         | 'INTERNAL'
+        | 'FORBIDDEN'
     }
 
 export type EvolutionDelta = {

@@ -1,9 +1,10 @@
 # GamePlan AI — Design Specification
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Status:** Draft  
-**Date:** 2026-02-17  
-**Companion to:** `game-idea-synthesizer-PRD.md`
+**Date:** 2026-02-18  
+**Companion to:** `game-idea-synthesizer-PRD.md`  
+**Implementation refs:** `plans/ui-implementation-spec.md`, `plans/collab-implementation-spec.md` (Idea Stream)
 
 ---
 
@@ -22,15 +23,18 @@
 ## 1.1 Site Map
 
 ```
-/                                   → Dashboard (project list)
-/new                                → New Project wizard
+/                                   → Redirect to /dashboard
+/dashboard                           → Dashboard (project list)
 
-/projects/:projectId                → Project Overview (redirect to /projects/:projectId/overview)
+/projects/new                        → New Project wizard
+
 /projects/:projectId/overview       → Project Overview dashboard
 /projects/:projectId/brainstorms    → Brainstorm Sessions list
 /projects/:projectId/brainstorms/new           → New Brainstorm entry
 /projects/:projectId/brainstorms/:sessionId    → View Brainstorm session
 /projects/:projectId/brainstorms/:sessionId/synthesize → Synthesize flow
+
+/projects/:projectId/idea-stream    → Idea Stream (threads + messages, finalize → brainstorm)
 
 /projects/:projectId/systems        → Systems list (card grid + table toggle)
 /projects/:projectId/systems/new    → Create new system manually
@@ -51,19 +55,20 @@
 
 /projects/:projectId/export         → Export center
 
-/settings                           → App settings (AI provider config, theme)
+/settings                           → App settings (profile display name, AI provider config, theme)
 ```
 
 ## 1.2 Navigation Hierarchy
 
 ```
 Level 0: App Shell
-├── Dashboard (/)
+├── Dashboard (/dashboard)
 ├── Settings (/settings)
 │
 Level 1: Project Context (/projects/:projectId)
 ├── Overview
 ├── Brainstorms
+├── Idea Stream
 ├── Systems
 ├── Dependencies
 ├── Versions
@@ -73,7 +78,7 @@ Level 1: Project Context (/projects/:projectId)
 
 ## 1.3 Page Inventory
 
-### 1.3.1 Dashboard (`/`)
+### 1.3.1 Dashboard (`/dashboard`)
 
 | Element               | Description                                                     |
 |-----------------------|-----------------------------------------------------------------|
@@ -84,7 +89,7 @@ Level 1: Project Context (/projects/:projectId)
 | Search / filter bar   | Filter by status (Ideation / Active / Archived), text search    |
 | Sort control          | Last edited, alphabetical, creation date                        |
 
-### 1.3.2 New Project (`/new`)
+### 1.3.2 New Project (`/projects/new`)
 
 | Element             | Description                                              |
 |---------------------|----------------------------------------------------------|
@@ -93,7 +98,24 @@ Level 1: Project Context (/projects/:projectId)
 | Submit action       | Server Action → redirect to `/projects/:id/overview`     |
 | Cancel              | Returns to Dashboard                                     |
 
-### 1.3.3 Project Overview (`/projects/:projectId/overview`)
+### 1.3.3 Idea Stream (`/projects/:projectId/idea-stream`)
+
+Lightweight, always-open collaboration space per project. See `plans/collab-implementation-spec.md` for full behavior.
+
+| Element                  | Description                                                                 |
+|--------------------------|-----------------------------------------------------------------------------|
+| Two-panel layout         | Left: thread list (newest activity, unread indicator). Right: active thread. |
+| New thread               | Quick "New Thread" input; first message creates thread.                    |
+| Thread list              | Derived title/snippet, last activity time, unread dot; checkbox per thread for finalize. |
+| Messages                 | Chronological; avatar (initials or Creator/Responder), name, timestamp, content. |
+| Reply                    | Inline reply to any message; sends `parent_message_id`.                    |
+| Edit/Delete              | Author can edit (shows "(edited)") or soft-delete (tombstone).              |
+| Composer                 | Sticky bottom textarea; Send; Enter to send, Shift+Enter newline.          |
+| Live updates             | Client polling every 2s; new threads/messages appear without refresh.       |
+| Finalize + Synthesize    | Select one or more threads → creates Brainstorm Session markdown → navigates to synthesize flow. |
+| Display name             | If set (in Settings): initials in Idea Stream. If not: "Creator" / "Responder" per thread. |
+
+### 1.3.4 Project Overview (`/projects/:projectId/overview`)
 
 | Element                  | Description                                                  |
 |--------------------------|--------------------------------------------------------------|
@@ -104,7 +126,7 @@ Level 1: Project Context (/projects/:projectId)
 | Project settings gear    | Opens project edit drawer                                    |
 | Dependency mini-graph    | Small, non-interactive preview of dependency graph           |
 
-### 1.3.4 Brainstorms List (`/projects/:projectId/brainstorms`)
+### 1.3.5 Brainstorms List (`/projects/:projectId/brainstorms`)
 
 | Element          | Description                                           |
 |------------------|-------------------------------------------------------|
@@ -113,7 +135,7 @@ Level 1: Project Context (/projects/:projectId)
 | Filter/sort      | By date, by tag, synthesized vs raw                   |
 | Empty state      | "Paste your first brainstorm to get started"          |
 
-### 1.3.5 New Brainstorm (`/projects/:projectId/brainstorms/new`)
+### 1.3.6 New Brainstorm (`/projects/:projectId/brainstorms/new`)
 
 | Element             | Description                                                        |
 |---------------------|--------------------------------------------------------------------|
@@ -125,7 +147,7 @@ Level 1: Project Context (/projects/:projectId)
 | Save action         | Server Action → redirect to session view                           |
 | Save & Synthesize   | Server Action → save then redirect to synthesize flow              |
 
-### 1.3.6 View Brainstorm (`/projects/:projectId/brainstorms/:sessionId`)
+### 1.3.7 View Brainstorm (`/projects/:projectId/brainstorms/:sessionId`)
 
 | Element                | Description                                                  |
 |------------------------|--------------------------------------------------------------|
@@ -134,7 +156,7 @@ Level 1: Project Context (/projects/:projectId)
 | Action bar             | "Synthesize", "Edit Tags", "Delete"                          |
 | Synthesized outputs    | If synthesized: linked card(s) to synthesized output         |
 
-### 1.3.7 Synthesize Flow (`/projects/:projectId/brainstorms/:sessionId/synthesize`)
+### 1.3.8 Synthesize Flow (`/projects/:projectId/brainstorms/:sessionId/synthesize`)
 
 This is a **multi-step wizard**:
 
@@ -145,7 +167,7 @@ This is a **multi-step wizard**:
 | 3    | Review Output      | Rendered structured output: extracted system candidates, key themes, suggested dependencies |
 | 4    | Convert to Systems | Checkbox list of extracted systems → "Create Selected Systems"     |
 
-### 1.3.8 Systems List (`/projects/:projectId/systems`)
+### 1.3.9 Systems List (`/projects/:projectId/systems`)
 
 | Element             | Description                                                              |
 |---------------------|--------------------------------------------------------------------------|
@@ -157,7 +179,7 @@ This is a **multi-step wizard**:
 | Bulk actions        | Merge selected, Delete selected                                          |
 | New system CTA      | Button → `/systems/new`                                                  |
 
-### 1.3.9 Create/Edit System (`/projects/:projectId/systems/new`, `/systems/:systemId`)
+### 1.3.10 Create/Edit System (`/projects/:projectId/systems/new`, `/systems/:systemId`)
 
 | Element                  | Description                                                         |
 |--------------------------|---------------------------------------------------------------------|
@@ -183,7 +205,7 @@ This is a **multi-step wizard**:
 | Save action              | Server Action → persist markdown document                           |
 | Delete action            | Confirmation dialog → soft delete (archive)                         |
 
-### 1.3.10 System History (`/projects/:projectId/systems/:systemId/history`)
+### 1.3.11 System History (`/projects/:projectId/systems/:systemId/history`)
 
 | Element           | Description                                               |
 |-------------------|-----------------------------------------------------------|
@@ -191,7 +213,7 @@ This is a **multi-step wizard**:
 | Diff view         | Side-by-side or unified diff between versions             |
 | Restore action    | Revert to a previous version (with confirmation)          |
 
-### 1.3.11 System Evolution (`/projects/:projectId/systems/:systemId/evolve`)
+### 1.3.12 System Evolution (`/projects/:projectId/systems/:systemId/evolve`)
 
 | Element                 | Description                                                     |
 |-------------------------|-----------------------------------------------------------------|
@@ -202,7 +224,7 @@ This is a **multi-step wizard**:
 | Dependency impact panel | Shows affected upstream/downstream systems                      |
 | Apply accepted changes  | Server Action → creates new version, appends to change log      |
 
-### 1.3.12 Dependency Graph (`/projects/:projectId/dependencies`)
+### 1.3.13 Dependency Graph (`/projects/:projectId/dependencies`)
 
 | Element                  | Description                                                      |
 |--------------------------|------------------------------------------------------------------|
@@ -218,7 +240,7 @@ This is a **multi-step wizard**:
 | Legend                   | Color key for criticality + status                               |
 | Filter controls          | Filter by criticality, status; hide/show deprecated              |
 
-### 1.3.13 Version Plans List (`/projects/:projectId/versions`)
+### 1.3.14 Version Plans List (`/projects/:projectId/versions`)
 
 | Element            | Description                                          |
 |--------------------|------------------------------------------------------|
@@ -227,7 +249,7 @@ This is a **multi-step wizard**:
 | New plan CTA       | "Create Version Plan" button                         |
 | Empty state        | "Define your first version milestone"                |
 
-### 1.3.14 New/Edit Version Plan (`/projects/:projectId/versions/new`, `/versions/:planId/edit`)
+### 1.3.15 New/Edit Version Plan (`/projects/:projectId/versions/new`, `/versions/:planId/edit`)
 
 | Element                   | Description                                                          |
 |---------------------------|----------------------------------------------------------------------|
@@ -245,7 +267,7 @@ This is a **multi-step wizard**:
 | Save as Draft             | Persist without finalizing                                           |
 | Finalize                  | Lock plan as immutable snapshot (confirmation dialog)                |
 
-### 1.3.15 View Version Plan (`/projects/:projectId/versions/:planId`)
+### 1.3.16 View Version Plan (`/projects/:projectId/versions/:planId`)
 
 | Element                    | Description                                                    |
 |----------------------------|----------------------------------------------------------------|
@@ -257,7 +279,7 @@ This is a **multi-step wizard**:
 | Risk areas display         | Rendered markdown                                              |
 | Action bar                 | "Generate Prompts", "Export", "Duplicate as Draft"             |
 
-### 1.3.16 Prompt Generator (`/projects/:projectId/prompts/new`)
+### 1.3.17 Prompt Generator (`/projects/:projectId/prompts/new`)
 
 | Element                  | Description                                                        |
 |--------------------------|--------------------------------------------------------------------|
@@ -269,7 +291,7 @@ This is a **multi-step wizard**:
 | Output display           | Markdown-rendered prompt output with copy-to-clipboard             |
 | Save to history          | Auto-saved on generation; links to prompt history                  |
 
-### 1.3.17 Prompt History (`/projects/:projectId/prompts`)
+### 1.3.18 Prompt History (`/projects/:projectId/prompts`)
 
 | Element             | Description                                                 |
 |---------------------|-------------------------------------------------------------|
@@ -277,7 +299,7 @@ This is a **multi-step wizard**:
 | Filter              | By type, by target, by date range                           |
 | Click to expand     | Opens `/prompts/:promptId`                                  |
 
-### 1.3.18 View Prompt (`/projects/:projectId/prompts/:promptId`)
+### 1.3.19 View Prompt (`/projects/:projectId/prompts/:promptId`)
 
 | Element              | Description                                    |
 |----------------------|------------------------------------------------|
@@ -287,7 +309,7 @@ This is a **multi-step wizard**:
 | Regenerate action    | Re-run with same config                        |
 | Copy actions         | Copy prompt, copy response, copy both          |
 
-### 1.3.19 Export Center (`/projects/:projectId/export`)
+### 1.3.20 Export Center (`/projects/:projectId/export`)
 
 | Element                 | Description                                                  |
 |-------------------------|--------------------------------------------------------------|
@@ -298,10 +320,11 @@ This is a **multi-step wizard**:
 | Download / Copy button   | Triggers file download or copies to clipboard                |
 | Export history            | List of previous exports with timestamps                     |
 
-### 1.3.20 Settings (`/settings`)
+### 1.3.21 Settings (`/settings`)
 
 | Element              | Description                                         |
 |----------------------|-----------------------------------------------------|
+| Profile              | **Display name** — shown in Idea Stream and collaboration views; leave blank to use Creator/Responder per thread. |
 | AI Provider config   | Provider select (OpenAI / Claude / Gemini), API key input, model select |
 | Theme toggle         | Light / Dark / System                               |
 | Default project settings | Default genre, platform presets                  |
@@ -311,8 +334,9 @@ This is a **multi-step wizard**:
 
 | Entity           | Create                        | Read                    | Update                        | Delete/Archive                   |
 |------------------|-------------------------------|-------------------------|-------------------------------|----------------------------------|
-| Project          | `/new` form                   | Dashboard cards, `/overview` | Edit drawer on overview     | Archive via project settings     |
-| Brainstorm       | `/brainstorms/new`            | `/brainstorms/:id`      | Edit tags only (content immutable) | Delete with confirmation    |
+| Project          | `/projects/new` form          | Dashboard cards, `/overview` | Edit drawer on overview     | Archive via project settings     |
+| Brainstorm       | `/brainstorms/new` or Idea Stream finalize | `/brainstorms/:id` | Edit tags only (content immutable) | Delete with confirmation    |
+| Idea Stream      | New thread / reply in `/idea-stream` | Thread list, messages | Edit/delete own messages       | Soft-delete message (tombstone)   |
 | System           | `/systems/new` or Synthesize convert | `/systems/:id`  | Form/Markdown editor          | Archive with confirmation        |
 | Dependency       | Graph edge interaction or system form | Graph view, system detail | Graph edge interaction  | Graph edge removal               |
 | Version Plan     | `/versions/new`               | `/versions/:id`         | `/versions/:id/edit` (draft only) | Delete draft only            |
@@ -337,9 +361,10 @@ The application uses a **sidebar + top bar** hybrid layout:
 │          │                                           │
 │ Overview │  ┌─────────────────────────────────────┐  │
 │ Brainst. │  │  Page Header (title + actions)      │  │
-│ Systems  │  ├─────────────────────────────────────┤  │
-│ Deps.    │  │                                     │  │
-│ Versions │  │  Page Content                       │  │
+│ Idea Str.│  ├─────────────────────────────────────┤  │
+│ Systems  │  │                                     │  │
+│ Deps.    │  │  Page Content                       │  │
+│ Versions │  │                                     │  │
 │ Prompts  │  │                                     │  │
 │ Export   │  │                                     │  │
 │          │  └─────────────────────────────────────┘  │
@@ -361,7 +386,7 @@ The application uses a **sidebar + top bar** hybrid layout:
 | Element              | Behavior                                                  |
 |----------------------|-----------------------------------------------------------|
 | Visibility           | Only shown when inside a project context (`/projects/:id/*`) |
-| Dashboard (/)        | No sidebar — full-width layout                            |
+| Dashboard (/dashboard) | No sidebar — full-width layout                            |
 | Navigation items     | Icon + label; icon-only when collapsed                    |
 | Active indicator      | Left border highlight on current section                  |
 | Collapse toggle      | Chevron button at sidebar bottom                          |
@@ -370,12 +395,13 @@ The application uses a **sidebar + top bar** hybrid layout:
 **Sidebar Navigation Items (in order):**
 
 1. Overview (LayoutDashboard icon)
-2. Brainstorms (MessageSquare icon)
-3. Systems (Boxes icon)
-4. Dependencies (GitBranch icon)
-5. Versions (Milestone icon)
-6. Prompts (Sparkles icon)
-7. Export (Download icon)
+2. Brainstorms (Lightbulb icon)
+3. Idea Stream (MessageCircle icon)
+4. Systems (Boxes icon)
+5. Dependencies (GitBranch icon)
+6. Versions (Calendar icon)
+7. Prompts (MessageSquare icon)
+8. Export (FileOutput icon)
 
 ### Content Area
 
@@ -409,13 +435,13 @@ The project context (`projectId`) is derived from the URL path. The sidebar and 
 
 ```
 app/
-  layout.tsx                          → App shell (top bar only)
-  page.tsx                            → Dashboard (no sidebar)
-  new/page.tsx                        → New project (no sidebar)
-  projects/[projectId]/
-    layout.tsx                        → Project shell (sidebar + top bar)
-    page.tsx                          → Redirect to overview
+  (app)/layout.tsx                    → App shell (top bar only)
+  (app)/dashboard/page.tsx            → Dashboard (no sidebar)
+  (app)/projects/new/page.tsx         → New project (no sidebar)
+  (app)/projects/[projectId]/
+    layout.tsx                        → Project shell (sidebar + content)
     overview/page.tsx
+    idea-stream/page.tsx
     brainstorms/
       page.tsx
       new/page.tsx
@@ -638,10 +664,10 @@ Below is every distinct component the application requires, organized by categor
 ## 4.1 New Project Creation
 
 ```
-Screen 1: Dashboard (/)
+Screen 1: Dashboard (/dashboard)
   → User clicks "New Project" button
 
-Screen 2: New Project Form (/new)
+Screen 2: New Project Form (/projects/new)
   → User fills in: Name*, Description, Genre, Platform, Status
   → User clicks "Create Project"
   → Server Action validates with Zod
@@ -1188,12 +1214,13 @@ Use **Lucide React** icons (bundled with Shadcn). Key icon assignments:
 | Concept          | Icon Name              |
 |------------------|------------------------|
 | Overview         | `LayoutDashboard`      |
-| Brainstorms      | `MessageSquare`        |
+| Brainstorms      | `Lightbulb`            |
+| Idea Stream      | `MessageCircle`       |
 | Systems          | `Boxes`                |
 | Dependencies     | `GitBranch`            |
-| Versions         | `Milestone`            |
-| Prompts          | `Sparkles`             |
-| Export           | `Download`             |
+| Versions         | `Calendar` / `Milestone` |
+| Prompts          | `MessageSquare`        |
+| Export           | `FileOutput` / `Download` |
 | Settings         | `Settings`             |
 | Create/Add       | `Plus`                 |
 | Edit             | `Pencil`               |
@@ -1249,58 +1276,66 @@ Use **Lucide React** icons (bundled with Shadcn). Key icon assignments:
 
 ```
 app/
-├── layout.tsx                                    → AppShell (TopBar)
-├── page.tsx                                      → Dashboard
-├── loading.tsx                                   → Dashboard skeleton
-├── not-found.tsx                                 → 404 page
-├── new/
-│   └── page.tsx                                  → New Project form
-├── projects/
-│   └── [projectId]/
-│       ├── layout.tsx                            → ProjectShell (Sidebar + TopBar)
-│       ├── page.tsx                              → Redirect → overview
-│       ├── loading.tsx                           → Project skeleton
-│       ├── not-found.tsx                         → Project 404
-│       ├── overview/
-│       │   └── page.tsx                          → Project Overview
-│       ├── brainstorms/
-│       │   ├── page.tsx                          → Brainstorm list
-│       │   ├── new/
-│       │   │   └── page.tsx                      → New Brainstorm
-│       │   └── [sessionId]/
-│       │       ├── page.tsx                      → View Brainstorm
-│       │       └── synthesize/
-│       │           └── page.tsx                  → Synthesize Wizard
-│       ├── systems/
-│       │   ├── page.tsx                          → Systems list
-│       │   ├── new/
-│       │   │   └── page.tsx                      → New System
-│       │   └── [systemId]/
-│       │       ├── page.tsx                      → View/Edit System
-│       │       ├── history/
-│       │       │   └── page.tsx                  → System History
-│       │       └── evolve/
-│       │           └── page.tsx                  → System Evolution
-│       ├── dependencies/
-│       │   └── page.tsx                          → Dependency Graph
-│       ├── versions/
-│       │   ├── page.tsx                          → Version Plans list
-│       │   ├── new/
-│       │   │   └── page.tsx                      → New Version Plan
-│       │   └── [planId]/
-│       │       ├── page.tsx                      → View Version Plan
-│       │       └── edit/
-│       │           └── page.tsx                  → Edit Version Plan
-│       ├── prompts/
-│       │   ├── page.tsx                          → Prompt History
-│       │   ├── new/
-│       │   │   └── page.tsx                      → Prompt Generator
-│       │   └── [promptId]/
-│       │       └── page.tsx                      → View Prompt
-│       └── export/
-│           └── page.tsx                          → Export Center
-└── settings/
-    └── page.tsx                                  → App Settings
+├── layout.tsx                                    → Root (html, ThemeProvider)
+├── page.tsx                                      → Redirect → /dashboard
+├── loading.tsx                                   → Root loading
+├── not-found.tsx                                 → 404
+├── (app)/
+│   ├── layout.tsx                                → App layout (TopBar only)
+│   ├── loading.tsx                               → App loading
+│   ├── dashboard/
+│   │   └── page.tsx                              → Project list (Dashboard)
+│   ├── projects/
+│   │   ├── new/
+│   │   │   └── page.tsx                          → New Project form
+│   │   └── [projectId]/
+│   │       ├── layout.tsx                        → Project layout (Sidebar + content)
+│   │       ├── loading.tsx                       → Project loading
+│   │       ├── not-found.tsx                     → Project 404
+│   │       ├── overview/
+│   │       │   └── page.tsx                      → Project Overview
+│   │       ├── brainstorms/
+│   │       │   ├── page.tsx                      → Brainstorm list
+│   │       │   ├── new/
+│   │       │   │   └── page.tsx                  → New Brainstorm
+│   │       │   └── [sessionId]/
+│   │       │       ├── page.tsx                  → View Brainstorm
+│   │       │       └── synthesize/
+│   │       │           └── page.tsx              → Synthesize Wizard
+│   │       ├── idea-stream/
+│   │       │   ├── page.tsx                      → Idea Stream (2-panel)
+│   │       │   ├── loading.tsx                   → Idea Stream loading
+│   │       │   └── idea-stream-content.tsx      → Client: threads, messages, polling
+│   │       ├── systems/
+│   │       │   ├── page.tsx                      → Systems list
+│   │       │   ├── new/
+│   │       │   │   └── page.tsx                  → New System
+│   │       │   └── [systemId]/
+│   │       │       ├── page.tsx                  → View/Edit System
+│   │       │       ├── history/
+│   │       │       │   └── page.tsx              → System History
+│   │       │       └── evolve/
+│   │       │           └── page.tsx              → System Evolution
+│   │       ├── dependencies/
+│   │       │   └── page.tsx                      → Dependency Graph
+│   │       ├── versions/
+│   │       │   ├── page.tsx                      → Version Plans list
+│   │       │   ├── new/
+│   │       │   │   └── page.tsx                  → New Version Plan
+│   │       │   └── [planId]/
+│   │       │       ├── page.tsx                  → View Version Plan
+│   │       │       └── edit/
+│   │       │           └── page.tsx              → Edit Version Plan
+│   │       ├── prompts/
+│   │       │   ├── page.tsx                      → Prompt History
+│   │       │   ├── new/
+│   │       │   │   └── page.tsx                  → Prompt Generator
+│   │       │   └── [promptId]/
+│   │       │       └── page.tsx                  → View Prompt
+│   │       └── export/
+│   │           └── page.tsx                      → Export Center
+│   └── settings/
+│       └── page.tsx                              → Settings (display name, AI config, theme)
 ```
 
 ---

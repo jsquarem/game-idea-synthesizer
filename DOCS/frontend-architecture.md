@@ -1,9 +1,10 @@
 # Frontend Architecture Specification
 
 **Product:** GamePlan AI  
-**Version:** v1.0  
+**Version:** v1.1  
 **Status:** Draft  
-**Last Updated:** 2026-02-17
+**Last Updated:** 2026-02-18  
+**Implementation refs:** `plans/ui-implementation-spec.md`, `plans/collab-implementation-spec.md` (Idea Stream)
 
 ---
 
@@ -37,7 +38,7 @@ app/
 │   └── page.tsx                        # Public landing page (Server)
 │
 ├── (app)/
-│   ├── layout.tsx                      # App shell layout (Server) — sidebar, top bar, breadcrumbs
+│   ├── layout.tsx                      # App layout (Server) — top bar only; no sidebar here
 │   ├── loading.tsx                     # App-level loading skeleton
 │   ├── error.tsx                       # App-level error boundary (Client)
 │   │
@@ -45,16 +46,14 @@ app/
 │   │   └── page.tsx                    # Project list / recent activity (Server)
 │   │
 │   ├── projects/
-│   │   ├── page.tsx                    # All projects list (Server)
 │   │   ├── new/
 │   │   │   └── page.tsx               # Create project form (Server + Server Action)
 │   │   │
 │   │   └── [projectId]/
-│   │       ├── layout.tsx             # Project-scoped layout (Server) — project nav tabs
+│   │       ├── layout.tsx             # Project-scoped layout (Server) — ProjectSidebar + content
 │   │       ├── loading.tsx            # Project loading skeleton
 │   │       ├── error.tsx              # Project error boundary (Client)
 │   │       ├── not-found.tsx          # Project 404 (Server)
-│   │       ├── page.tsx               # Project overview / summary (Server)
 │   │       │
 │   │       ├── brainstorms/
 │   │       │   ├── page.tsx           # Brainstorm session list (Server)
@@ -79,6 +78,11 @@ app/
 │   │       │
 │   │       ├── dependencies/
 │   │       │   └── page.tsx           # Full dependency graph view (Server shell + Client graph)
+│   │       │
+│   │       ├── idea-stream/
+│   │       │   ├── page.tsx           # Idea Stream 2-panel (Server shell + Client content)
+│   │       │   ├── loading.tsx        # Idea Stream loading skeleton
+│   │       │   └── idea-stream-content.tsx  # Client: thread list, messages, polling
 │   │       │
 │   │       ├── versions/
 │   │       │   ├── page.tsx           # Version plan list (Server)
@@ -105,16 +109,15 @@ app/
 | Group | Purpose | Layout |
 |-------|---------|--------|
 | `(marketing)` | Public pages, no auth context, minimal chrome | Minimal nav, centered content |
-| `(app)` | Authenticated app shell, sidebar navigation | Sidebar + top bar + breadcrumb |
+| `(app)` | Authenticated app shell | Top bar only; sidebar only inside project context (`/projects/[projectId]/*`) |
 
 ## 1.3 Server vs Client Classification by Page
 
 | Route | Rendering | Rationale |
 |-------|-----------|-----------|
-| `(app)/dashboard/page.tsx` | **Server** | Fetches project list, no interactivity needed |
-| `(app)/projects/page.tsx` | **Server** | List page with search via URL params |
+| `(app)/dashboard/page.tsx` | **Server** | Fetches project list; optional client for search/filter |
 | `(app)/projects/new/page.tsx` | **Server** with Server Action | Progressive form, no client JS needed |
-| `(app)/projects/[projectId]/page.tsx` | **Server** | Read-only overview |
+| `(app)/projects/[projectId]/overview/page.tsx` | **Server** | Read-only project overview |
 | `(app)/projects/[projectId]/brainstorms/page.tsx` | **Server** | List page |
 | `(app)/projects/[projectId]/brainstorms/new/page.tsx` | **Server** with Server Action | Textarea paste form |
 | `(app)/projects/[projectId]/brainstorms/[sessionId]/page.tsx` | **Server** | Read-only view |
@@ -124,6 +127,7 @@ app/
 | `(app)/projects/[projectId]/systems/[systemId]/page.tsx` | **Server** shell + **Client** toggle | Markdown/structured toggle is interactive |
 | `(app)/projects/[projectId]/systems/[systemId]/edit/page.tsx` | **Server** shell + **Client** editor | Editor requires full client interactivity |
 | `(app)/projects/[projectId]/dependencies/page.tsx` | **Server** shell + **Client** graph | Graph visualization is entirely client-rendered |
+| `(app)/projects/[projectId]/idea-stream/page.tsx` | **Server** shell + **Client** content | Idea Stream: thread list, messages, reply/edit/delete, finalize → brainstorm (client island; polling) |
 | `(app)/projects/[projectId]/versions/page.tsx` | **Server** | List page |
 | `(app)/projects/[projectId]/versions/new/page.tsx` | **Server** shell + **Client** form | System selection checkboxes, AI generation |
 | `(app)/projects/[projectId]/versions/[versionId]/page.tsx` | **Server** | Read-only immutable snapshot |
@@ -190,52 +194,29 @@ Every component below is installed via `npx shadcn@latest add <name>`:
 
 ### Layout Components
 
-#### `components/app-shell.tsx` — **Server**
-The authenticated app layout wrapper.
-
-```ts
-interface AppShellProps {
-  children: React.ReactNode
-}
-```
-Renders sidebar, top bar, breadcrumb rail. Children are the route content.
-
-#### `components/sidebar-nav.tsx` — **Client**
-Collapsible sidebar with project-aware navigation.
-
-```ts
-interface SidebarNavProps {
-  projectId?: string
-  currentPath: string
-}
-```
-Uses `usePathname()` for active state. Collapsible on mobile via Sheet.
-
 #### `components/top-bar.tsx` — **Server**
-Top bar with breadcrumbs, command palette trigger, settings link.
+App-level top bar: logo (link to dashboard), breadcrumbs, settings and user (avatar) links.
 
 ```ts
-interface TopBarProps {
-  breadcrumbs: Array<{ label: string; href?: string }>
+// No props — Breadcrumbs component reads pathname
+```
+Rendered from `(app)/layout.tsx`. No sidebar at app level.
+
+#### `components/project-sidebar.tsx` — **Client**
+Collapsible sidebar shown only inside project context (`/projects/[projectId]/*`). Width 256px expanded, 64px collapsed (persisted in localStorage).
+
+```ts
+interface ProjectSidebarProps {
+  projectId: string
 }
 ```
+Nav items: Overview, Brainstorms, **Idea Stream**, Systems, Dependencies, Versions, Prompts, Export. Uses `usePathname()` for active state. Mobile: Sheet drawer with hamburger trigger.
 
-#### `components/breadcrumb-trail.tsx` — **Server**
-Dynamic breadcrumb renderer using Shadcn Breadcrumb.
+#### `components/breadcrumbs.tsx` — **Server** (or Client)
+Dynamic breadcrumb trail from URL segments (e.g. Projects > Project Name > Section).
 
-```ts
-interface BreadcrumbTrailProps {
-  segments: Array<{ label: string; href?: string }>
-}
-```
-
-#### `components/command-palette.tsx` — **Client**
-Global Cmd+K command palette for quick navigation.
-
-```ts
-// No external props — reads projects/systems from Zustand or server fetch
-```
-Uses Shadcn `Command` component. Keyboard shortcut listener.
+#### `components/command-palette.tsx` — **Client** (optional)
+Global Cmd+K command palette for quick navigation. Uses Shadcn `Command`.
 
 ### Project Components
 
@@ -291,6 +272,18 @@ interface BrainstormMessageListProps {
   }>
 }
 ```
+
+### Idea Stream Components (see `plans/collab-implementation-spec.md`)
+
+#### `app/(app)/projects/[projectId]/idea-stream/idea-stream-content.tsx` — **Client**
+Two-panel Idea Stream: thread list (left), active thread messages + composer (right). Polling every 2s for threads and messages; Server Actions for create thread, post message, edit/delete message, mark read, finalize → brainstorm.
+
+```ts
+interface IdeaStreamContentProps {
+  projectId: string
+}
+```
+State: `activeThreadId`, `selectedThreadIds`, `replyToMessageId`, draft content; server as source of truth. Uses `/api/me` and `/api/projects/[projectId]/idea-stream/threads` (and thread messages) for data; `app/actions/idea-stream.actions.ts` for mutations.
 
 ### System Components
 
@@ -681,11 +674,13 @@ interface DataTableProps<T> {
 | Route | Local Components |
 |-------|-----------------|
 | `projects/[projectId]/brainstorms/[sessionId]/synthesize/` | `_components/synthesis-stream.tsx` (Client) — handles SSE/streaming from AI |
+| `projects/[projectId]/idea-stream/` | `idea-stream-content.tsx` (Client) — thread list, messages, composer, polling, finalize |
 | `projects/[projectId]/systems/[systemId]/` | `_components/system-tab-content.tsx` (Client) — manages structured/markdown tab state |
 | `projects/[projectId]/systems/[systemId]/edit/` | `_components/system-edit-form.tsx` (Client) — wraps form + editor with unsaved changes tracking |
 | `projects/[projectId]/dependencies/` | `_components/graph-panel.tsx` (Client) — wraps graph + sidebar detail panel |
 | `projects/[projectId]/versions/new/` | `_components/version-wizard.tsx` (Client) — multi-step version plan creation wizard |
 | `projects/[projectId]/export/` | `_components/export-preview.tsx` (Client) — live preview of export output |
+| `settings/` | `settings-display-name-form.tsx` (Client) — display name for Idea Stream / profile |
 
 ---
 
@@ -806,6 +801,7 @@ The following data is **only** fetched in Server Components and passed as props.
 | Version detail | `[versionId]/page.tsx` | `VersionPlanDetail` |
 | Prompt history | `prompts/page.tsx` | `DataTable` |
 | Prompt detail | `[promptId]/page.tsx` | `PromptResultView` |
+| Idea Stream threads/messages | Client fetch from API routes | `IdeaStreamContent` (polling); not in global state |
 
 ## 3.3 URL State via `nuqs`
 
@@ -843,7 +839,7 @@ const systemFilters = {
 | Create version plan | **react-hook-form** + Zod + Server Action | Multi-step wizard with system selection |
 | Generate prompt | **react-hook-form** + Zod + Server Action | Config form with mode selection |
 | Export | **Server Action** | Simple format + scope selection |
-| Settings | **react-hook-form** + Zod + Server Action | Multiple field groups, API key validation |
+| Settings | **Server Action** + native form / **react-hook-form** | Display name (Profile); API key, theme (future) |
 | System markdown editor | **Zustand (editor-store)** + Server Action on save | Freeform text, not a traditional form |
 
 ---
@@ -853,6 +849,8 @@ const systemFilters = {
 ## 4.1 Server Component Data Fetching
 
 All data fetching happens in Server Components through a service layer. Route handlers call services; services call repositories.
+
+**Idea Stream** uses a hybrid approach: **GET** API routes for client polling (e.g. `GET /api/me`, `GET /api/projects/[projectId]/idea-stream/threads`, `GET .../threads/[threadId]/messages`) and **Server Actions** for all mutations (create thread, post message, edit/delete, mark read, finalize). See `plans/collab-implementation-spec.md`.
 
 ```
 app/
@@ -910,6 +908,14 @@ export async function exportProject(projectId: string, scope: ExportScope, forma
 // lib/services/synthesis-service.ts
 export async function synthesizeBrainstorm(projectId: string, sessionId: string): AsyncGenerator<string>
 export async function confirmSynthesis(projectId: string, sessionId: string, systems: Partial<GameSystem>[]): Promise<GameSystem[]>
+
+// lib/services/idea-stream.service.ts (see plans/collab-implementation-spec.md)
+export async function ensureUserCanAccessProject(projectId: string, userId: string): Promise<ServiceResult<void>>
+export async function createThreadWithFirstMessage(projectId: string, userId: string, content: string, title?: string | null): Promise<ServiceResult<{ thread, message }>>
+export async function listThreadsForProject(projectId: string, userId: string, opts?: { cursor?, limit }): Promise<ThreadListItem[]>
+export async function listMessages(projectId: string, threadId: string, since?: string): Promise<MessageWithAuthor[]>
+export async function finalizeThreadsToBrainstorm(projectId: string, userId: string, threadIds: string[], title?: string): Promise<ServiceResult<{ brainstormSessionId: string }>>
+// + postMessage, updateMessageContent, softDeleteMessage, upsertThreadRead
 ```
 
 ### Example Server Component Data Flow
@@ -951,7 +957,10 @@ All mutations use Server Actions defined in `lib/actions/`.
 ### File Structure
 
 ```
-lib/actions/
+app/actions/
+├── idea-stream.actions.ts   # createThread, postMessage, editMessage, deleteMessage, markRead, finalize
+├── user.actions.ts          # updateDisplayName (for Settings / Idea Stream identity)
+lib/actions/ or app/actions/
 ├── project-actions.ts
 ├── brainstorm-actions.ts
 ├── system-actions.ts
