@@ -8,7 +8,7 @@ test.describe('Brainstorm', () => {
     await page.getByRole('button', { name: 'Create Project' }).click()
     await expect(page).toHaveURL(/\/projects\/[^/]+\/overview/)
 
-    await page.getByRole('link', { name: 'Brainstorms' }).click()
+    await page.getByRole('navigation').getByRole('link', { name: 'Brainstorms' }).click()
     await expect(page).toHaveURL(/\/brainstorms$/)
     await page.getByRole('link', { name: 'New session' }).click()
     await expect(page).toHaveURL(/\/brainstorms\/new/)
