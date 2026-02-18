@@ -83,7 +83,7 @@ export function DashboardContent({
 
   return (
     <div className="space-y-8">
-      <Card className="rounded-xl">
+      <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">Your Projects</h1>
@@ -136,10 +136,10 @@ export function DashboardContent({
         </section>
       )}
 
-      <Card className="rounded-xl">
+      <Card>
         <CardHeader>
           <h2 className="text-lg font-semibold">Projects</h2>
-          <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
             <form onSubmit={handleSearchSubmit} className="relative flex-1">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -151,7 +151,7 @@ export function DashboardContent({
             </form>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" size="sm">
                   Status: {initialStatus || 'All'}
                 </Button>
               </DropdownMenuTrigger>
@@ -170,7 +170,7 @@ export function DashboardContent({
             </DropdownMenu>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">
+                <Button variant="outline" size="sm">
                   Sort: {initialSort === 'name' ? 'Name' : initialSort === 'updated' ? 'Updated' : 'Recent'}
                 </Button>
               </DropdownMenuTrigger>

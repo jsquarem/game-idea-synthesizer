@@ -30,11 +30,11 @@ export function SystemCard({ system, projectId, className }: SystemCardProps) {
     <Link href={`/projects/${projectId}/systems/${system.id}`}>
       <Card
         className={cn(
-          'transition-shadow hover:shadow-lg hover:-translate-y-0.5',
+          'transition-shadow duration-150 hover:shadow-md',
           className
         )}
       >
-        <CardContent className="p-6">
+        <CardContent>
           <h2 className="font-semibold">{system.name}</h2>
           <p className="mt-1 font-mono text-sm text-muted-foreground">{system.systemSlug}</p>
           <div className="mt-3 flex flex-wrap gap-2">

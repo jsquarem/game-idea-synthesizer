@@ -46,7 +46,7 @@ export function SystemViewToggle({
           <input type="hidden" name="purpose" value={system.purpose ?? ''} />
           <input type="hidden" name="mvpCriticality" value={system.mvpCriticality} />
           <Card>
-            <CardContent className="pt-6">
+            <CardContent>
               <label htmlFor="md" className="mb-2 block text-sm font-medium">
                 Markdown (read-only; edit via Structured view)
               </label>

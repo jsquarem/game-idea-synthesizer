@@ -8,12 +8,12 @@ export default function DependenciesLoading() {
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-4">
           <Card className="min-h-[70vh]">
-            <CardContent className="flex min-h-[70vh] items-center justify-center p-8">
+            <CardContent className="flex min-h-[70vh] items-center justify-center">
               <Skeleton className="h-8 w-40" />
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="p-6 space-y-2">
+            <CardContent className="space-y-2">
               <Skeleton className="h-6 w-44" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-3/4" />
@@ -21,7 +21,7 @@ export default function DependenciesLoading() {
           </Card>
         </div>
         <Card>
-          <CardContent className="p-6 space-y-4">
+          <CardContent className="space-y-4">
             <Skeleton className="h-6 w-32" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-2/3" />

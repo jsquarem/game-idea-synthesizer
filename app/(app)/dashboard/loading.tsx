@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 export default function DashboardLoading() {
   return (
     <div className="space-y-8">
-      <Card className="rounded-xl">
+      <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div className="space-y-2">
             <Skeleton className="h-8 w-48" />
@@ -15,8 +15,8 @@ export default function DashboardLoading() {
       </Card>
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="rounded-xl">
-            <CardContent className="flex flex-col gap-2 p-6">
+          <Card key={i}>
+            <CardContent className="flex flex-col gap-2">
               <Skeleton className="h-5 w-5" />
               <Skeleton className="h-8 w-12" />
               <Skeleton className="h-4 w-24" />
@@ -24,7 +24,7 @@ export default function DashboardLoading() {
           </Card>
         ))}
       </section>
-      <Card className="rounded-xl">
+      <Card>
         <CardHeader>
           <Skeleton className="h-6 w-24" />
           <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -38,7 +38,7 @@ export default function DashboardLoading() {
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <li key={i}>
                 <Card>
-                  <CardContent className="p-6 space-y-3">
+                  <CardContent className="space-y-3">
                     <Skeleton className="h-5 w-3/4" />
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-full" />

@@ -46,7 +46,7 @@ export default async function ProjectActivityPage({
           All project activity: brainstorms, systems, idea stream, exports, version plans, dependencies
         </p>
       </div>
-      <Card className="rounded-xl">
+      <Card>
         <CardHeader>
           <h2 className="text-lg font-semibold">Project activity</h2>
         </CardHeader>

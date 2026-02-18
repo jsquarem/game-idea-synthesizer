@@ -28,11 +28,11 @@ export function ProjectCard({ project, className }: ProjectCardProps) {
     <Link href={`/projects/${project.id}/overview`}>
       <Card
         className={cn(
-          'transition-shadow hover:shadow-lg hover:-translate-y-0.5',
+          'transition-shadow duration-150 hover:shadow-md',
           className
         )}
       >
-        <CardContent className="p-6">
+        <CardContent>
           <h2 className="font-semibold">{project.name}</h2>
           {project.description && (
             <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">

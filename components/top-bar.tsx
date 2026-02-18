@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { Settings } from 'lucide-react'
 import { Breadcrumbs } from '@/components/breadcrumbs'
 import { Button } from '@/components/ui/button'
 import { avatarColorFromUser, getInitials } from '@/lib/avatar'
@@ -17,10 +16,10 @@ export function TopBar({ user }: { user: TopBarUser | null }) {
   const initials = user ? getInitials(user.displayName) : '?'
 
   return (
-    <header className="flex h-16 shrink-0 items-center gap-4 border-b border-border bg-card px-4 md:px-6">
+    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-border bg-background/80 backdrop-blur-sm px-4 md:px-6">
       <Link
         href="/dashboard"
-        className="flex shrink-0 items-center gap-2 font-semibold text-foreground"
+        className="flex shrink-0 items-center gap-2 text-sm font-bold tracking-tight text-foreground hover:text-foreground/80 transition-colors"
       >
         GamePlan AI
       </Link>
@@ -28,15 +27,10 @@ export function TopBar({ user }: { user: TopBarUser | null }) {
         <Breadcrumbs />
       </div>
       <div className="flex shrink-0 items-center gap-1">
-        <Button variant="ghost" size="icon" aria-label="Settings" asChild>
-          <Link href="/settings">
-            <Settings className="size-4" />
-          </Link>
-        </Button>
         <Button variant="ghost" size="icon" aria-label="Profile and settings" asChild>
           <Link href="/settings">
             <span
-              className="flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-medium text-white"
+              className="flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-medium text-white ring-2 ring-transparent hover:ring-primary/30 transition-all"
               style={{ backgroundColor: bgColor }}
             >
               {initials}

@@ -72,8 +72,8 @@ export function ProjectSidebar({ projectId }: ProjectSidebarProps) {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-muted text-foreground border-l-2 border-primary'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  ? 'bg-primary/10 text-primary font-medium'
+                  : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
                 collapsed && 'justify-center px-2'
               )}
             >
@@ -106,7 +106,7 @@ export function ProjectSidebar({ projectId }: ProjectSidebarProps) {
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          'hidden shrink-0 flex-col border-r border-border bg-card transition-[width] md:flex',
+          'hidden shrink-0 flex-col border-r border-border bg-card transition-[width] duration-200 ease-in-out md:flex sticky top-14 h-[calc(100vh-3.5rem)]',
           collapsed ? 'w-16' : 'w-64'
         )}
       >
@@ -124,7 +124,9 @@ export function ProjectSidebar({ projectId }: ProjectSidebarProps) {
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
             <div className="flex h-full flex-col">
-              <div className="border-b border-border p-4 font-semibold">Menu</div>
+              <div className="border-b border-border px-4 py-3">
+                <span className="text-sm font-bold tracking-tight">GamePlan AI</span>
+              </div>
               {nav}
             </div>
           </SheetContent>

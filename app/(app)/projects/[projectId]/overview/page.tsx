@@ -55,7 +55,7 @@ export default async function ProjectOverviewPage({
 
   return (
     <div className="space-y-8">
-      <Card className="rounded-xl">
+      <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">{project.name}</h1>
@@ -129,7 +129,7 @@ export default async function ProjectOverviewPage({
 
       <section className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <Card className="rounded-xl">
+          <Card>
             <CardHeader>
               <h2 className="text-lg font-semibold">Dependency graph</h2>
             </CardHeader>
@@ -146,7 +146,7 @@ export default async function ProjectOverviewPage({
           </Card>
         </div>
         <div>
-          <Card className="rounded-xl">
+          <Card>
             <CardHeader>
               <h2 className="text-lg font-semibold">Recent activity</h2>
             </CardHeader>
@@ -186,17 +186,20 @@ export default async function ProjectOverviewPage({
         </div>
       </section>
 
-      <section className="flex flex-wrap gap-3">
-        <Button asChild>
-          <Link href={`/projects/${projectId}/brainstorms/new`}>New Brainstorm</Link>
-        </Button>
-        <Button variant="secondary" asChild>
-          <Link href={`/projects/${projectId}/systems/new`}>New System</Link>
-        </Button>
-        <Button variant="secondary" asChild>
-          <Link href={`/projects/${projectId}/versions/new`}>Generate Version Plan</Link>
-        </Button>
-      </section>
+      <Card>
+        <CardContent className="flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium text-muted-foreground mr-2">Quick actions</span>
+          <Button size="sm" asChild>
+            <Link href={`/projects/${projectId}/brainstorms/new`}>New Brainstorm</Link>
+          </Button>
+          <Button size="sm" variant="secondary" asChild>
+            <Link href={`/projects/${projectId}/systems/new`}>New System</Link>
+          </Button>
+          <Button size="sm" variant="secondary" asChild>
+            <Link href={`/projects/${projectId}/versions/new`}>Generate Version Plan</Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   )
 }
