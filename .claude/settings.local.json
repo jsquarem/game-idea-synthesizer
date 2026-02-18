@@ -13,7 +13,15 @@
       "WebFetch(domain:gunpowderlabs.com)",
       "WebFetch(domain:ui.shadcn.com)",
       "WebFetch(domain:linear.app)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(git -C /Users/rpaddock/Projects/game-idea-synthesizer log --oneline -20)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vitest run:*)",
+      "Bash(node -e \"\n// Count tools across all files\nconst files = [\n  ''project.tools'', ''game-system.tools'', ''brainstorm.tools'',\n  ''dependency.tools'', ''version-plan.tools'', ''idea-stream.tools'', ''export.tools''\n];\nlet total = 0;\nfor \\(const f of files\\) {\n  // eslint-disable-next-line\n  delete require.cache[require.resolve\\(''./lib/ai/tools/'' + f\\)];\n}\n\")",
+      "Bash(ls:*)",
+      "Bash(npm install:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npx prisma db push:*)"
     ]
   }
 }

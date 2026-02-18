@@ -4,6 +4,7 @@ import { SettingsSwitchUserSelect } from './settings-switch-user-select'
 import { SettingsCreateUserForm } from './settings-create-user-form'
 import { SettingsWorkspaceMembersForm } from './settings-workspace-members-form'
 import { SettingsWorkspaceAiConfigForm } from './settings-workspace-ai-config-form'
+import { SettingsAiModelRoutingForm } from './settings-ai-model-routing-form'
 import { getCurrentUserId } from '@/lib/get-current-user'
 import { findUserById } from '@/lib/repositories/user.repository'
 import {
@@ -12,15 +13,17 @@ import {
   listAllUsers,
 } from '@/lib/repositories/workspace.repository'
 import { listWorkspaceAiConfigs } from '@/lib/repositories/workspace-ai-config.repository'
+import { listFeatureConfigs } from '@/lib/repositories/workspace-ai-feature-config.repository'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export default async function SettingsPage() {
   const userId = await getCurrentUserId()
   const user = await findUserById(userId)
   const workspace = await getOrCreateDefaultWorkspace()
-  const [members, aiConfigs] = await Promise.all([
+  const [members, aiConfigs, featureConfigs] = await Promise.all([
     listWorkspaceMembers(workspace.id),
     listWorkspaceAiConfigs(workspace.id),
+    listFeatureConfigs(workspace.id),
   ])
   const allUsers = await listAllUsers()
 
@@ -100,6 +103,25 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold">AI Model Routing</h2>
+          <p className="text-sm text-muted-foreground">
+            Configure which AI model to use for each feature.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <SettingsAiModelRoutingForm
+            workspaceId={workspace.id}
+            initialConfigs={featureConfigs.map((c) => ({
+              featureId: c.featureId,
+              providerId: c.providerId,
+              modelId: c.modelId,
+            }))}
+          />
+        </CardContent>
+      </Card>
 
       <Card className="border-dashed border-muted-foreground/30">
         <CardHeader>

@@ -13,9 +13,10 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships   WorkspaceMembership[]
-  aiConfigs     WorkspaceAiConfig[]
-  projects      Project[]
+  memberships       WorkspaceMembership[]
+  aiConfigs         WorkspaceAiConfig[]
+  aiFeatureConfigs  WorkspaceAiFeatureConfig[]
+  projects          Project[]
 
   @@index([createdAt])
 }
@@ -47,6 +48,21 @@ model WorkspaceAiConfig {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId, providerId])
+  @@index([workspaceId])
+}
+
+model WorkspaceAiFeatureConfig {
+  id          String   @id @default(cuid())
+  workspaceId String
+  featureId   String
+  providerId  String
+  modelId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, featureId])
   @@index([workspaceId])
 }
 

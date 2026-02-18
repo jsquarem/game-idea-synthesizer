@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
-import { PageHeader } from '@/components/page-header'
 import {
   createIdeaStreamThreadAction,
   postIdeaStreamMessageAction,
@@ -14,7 +13,8 @@ import {
   markIdeaStreamThreadReadAction,
   finalizeIdeaStreamThreadsAction,
 } from '@/app/actions/idea-stream.actions'
-import { MessageCircle, Send, Reply, Pencil, Trash2, RefreshCw, Check } from 'lucide-react'
+import { ActionPlanSidebar } from './action-plan-sidebar'
+import { MessageCircle, Send, Reply, Pencil, Trash2, RefreshCw, Check, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { avatarColorFromUser, getInitials } from '@/lib/avatar'
 
@@ -63,6 +63,8 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [editingContent, setEditingContent] = useState('')
   const [sseReconnect, setSseReconnect] = useState(0)
+  const [showActionPlan, setShowActionPlan] = useState(false)
+  const [actionPlanThreadIds, setActionPlanThreadIds] = useState<string[]>([])
   const activeThreadIdRef = useRef(activeThreadId)
   activeThreadIdRef.current = activeThreadId
 
@@ -238,6 +240,11 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
     }
   }
 
+  const handleSynthesize = () => {
+    setActionPlanThreadIds([...selectedThreadIds])
+    setShowActionPlan(true)
+  }
+
   const toggleThreadSelection = (threadId: string) => {
     setSelectedThreadIds((prev) => {
       const next = new Set(prev)
@@ -250,13 +257,14 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
   const activeThread = threads.find((t) => t.id === activeThreadId)
 
   return (
-    <div className="flex h-full min-h-0 gap-4">
-      <Card className="flex w-[360px] min-w-[280px] shrink-0 flex-col">
-        <CardHeader className="border-b px-4 py-3">
+    <div className="flex h-full min-h-0">
+      {/* Thread list */}
+      <div className="flex w-[300px] min-w-[240px] shrink-0 flex-col border-r border-white/[0.06] bg-background">
+        <div className="border-b border-white/[0.06] px-3 py-3">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="font-semibold">Idea Stream</h2>
-            <Button size="sm" asChild>
-              <a href={`/projects/${projectId}/idea-stream#new-thread`}>New Thread</a>
+            <h2 className="text-sm font-semibold">Threads</h2>
+            <Button size="sm" variant="ghost" asChild className="h-7 text-xs">
+              <a href={`/projects/${projectId}/idea-stream#new-thread`}>New</a>
             </Button>
           </div>
           <form
@@ -269,71 +277,57 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
               value={newThreadContent}
               onChange={(e) => setNewThreadContent(e.target.value)}
               rows={2}
-              className="min-h-0 resize-none"
+              className="min-h-0 resize-none text-sm"
             />
             <Button
               type="submit"
               size="icon"
+              className="size-8 shrink-0"
               disabled={!newThreadContent.trim() || isSubmitting}
               aria-label="Post new thread"
             >
-              <Send className="size-4" />
+              <Send className="size-3.5" />
             </Button>
           </form>
           {error && (
-            <p className="mt-1 text-sm text-destructive" role="alert">
+            <p className="mt-1 text-xs text-destructive" role="alert">
               {error}
             </p>
           )}
-        </CardHeader>
-        <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-          <ScrollArea className="flex-1">
-            <div className="flex flex-col">
-              {threads.map((thread) => (
-                <div
-                  key={thread.id}
-                  className={cn(
-                    'flex cursor-pointer items-start gap-2 border-b px-3 py-2 hover:bg-muted/50',
-                    activeThreadId === thread.id && 'bg-muted'
-                  )}
-                  onClick={() => setActiveThreadId(thread.id)}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedThreadIds.has(thread.id)}
-                    onChange={() => toggleThreadSelection(thread.id)}
-                    onClick={(e) => e.stopPropagation()}
-                    aria-label={`Select thread ${thread.id}`}
-                    className="mt-1 size-4 shrink-0 rounded border-border accent-primary"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {thread.title || thread.lastMessagePreview || 'Untitled'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(thread.lastActivityAt).toLocaleString()}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 shrink-0"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      fetchThreads().then(() => {
-                        if (thread.id === activeThreadId) fetchMessages()
-                      })
-                    }}
-                    aria-label={`Refresh thread ${thread.title || 'Untitled'}`}
-                  >
-                    <RefreshCw className="size-4" />
-                  </Button>
+        </div>
+        <ScrollArea className="flex-1">
+          <div className="flex flex-col">
+            {threads.map((thread) => (
+              <div
+                key={thread.id}
+                className={cn(
+                  'flex cursor-pointer items-start gap-2 border-b border-white/[0.06] px-3 py-2 hover:bg-muted/50',
+                  activeThreadId === thread.id && 'bg-muted'
+                )}
+                onClick={() => setActiveThreadId(thread.id)}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedThreadIds.has(thread.id)}
+                  onChange={() => toggleThreadSelection(thread.id)}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label={`Select thread ${thread.id}`}
+                  className="mt-1 size-3.5 shrink-0 rounded border-border accent-primary"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {thread.title || thread.lastMessagePreview || 'Untitled'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(thread.lastActivityAt).toLocaleString()}
+                  </p>
                 </div>
-              ))}
-            </div>
-          </ScrollArea>
-          <form className="border-t p-2" onSubmit={handleFinalize}>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+        <div className="border-t border-white/[0.06] p-2">
+          <form onSubmit={handleFinalize}>
             <input
               type="hidden"
               name="threadIds"
@@ -342,28 +336,42 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
             />
             <Button
               type="submit"
+              size="sm"
               className="w-full"
               disabled={selectedThreadIds.size === 0 || isSubmitting}
             >
-              Finalize + Synthesize ({selectedThreadIds.size} selected)
+              Finalize ({selectedThreadIds.size})
             </Button>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card className="flex min-w-0 flex-1 flex-col">
+      {/* Message content */}
+      <div className="flex min-w-0 flex-1 flex-col">
         {activeThreadId ? (
           <>
-            <CardHeader className="border-b px-4 py-2">
-              <h3 className="truncate font-medium">
-                {activeThread?.title ||
-                  activeThread?.lastMessagePreview ||
-                  'Thread'}
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Created {activeThread ? new Date(activeThread.createdAt).toLocaleString() : ''}
-              </p>
-            </CardHeader>
+            <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2">
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-sm font-medium">
+                  {activeThread?.title ||
+                    activeThread?.lastMessagePreview ||
+                    'Thread'}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Created {activeThread ? new Date(activeThread.createdAt).toLocaleString() : ''}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={selectedThreadIds.size === 0 || isSubmitting || showActionPlan}
+                onClick={handleSynthesize}
+                className="ml-3 shrink-0"
+              >
+                <Zap className="mr-1.5 size-3.5" />
+                Synthesize ({selectedThreadIds.size})
+              </Button>
+            </div>
             <ScrollArea className="flex-1">
               <div className="space-y-3 p-4">
                 {messages.map((msg) => {
@@ -506,15 +514,15 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
                 })}
               </div>
             </ScrollArea>
-            <div className="border-t p-3">
+            <div className="border-t border-white/[0.06] p-3">
               {replyToMessageId && (
                 <div className="mb-2 flex items-start justify-between gap-2 rounded border-l-2 border-primary/30 bg-muted/50 px-3 py-2 text-sm">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-foreground">
-                      Replying to {replyToAuthor ?? '…'}
+                      Replying to {replyToAuthor ?? '...'}
                     </p>
                     <p className="truncate text-muted-foreground">
-                      {replyToSnippet}{replyToSnippet.length >= 50 ? '…' : ''}
+                      {replyToSnippet}{replyToSnippet.length >= 50 ? '...' : ''}
                     </p>
                   </div>
                   <Button
@@ -551,12 +559,32 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
             </div>
           </>
         ) : (
-          <CardContent className="flex flex-1 flex-col items-center justify-center gap-4 text-muted-foreground">
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 text-muted-foreground">
             <MessageCircle className="size-12" />
             <p>Select a thread or start a new one</p>
-          </CardContent>
+            {selectedThreadIds.size > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isSubmitting || showActionPlan}
+                onClick={handleSynthesize}
+              >
+                <Zap className="mr-1.5 size-3.5" />
+                Synthesize ({selectedThreadIds.size} selected)
+              </Button>
+            )}
+          </div>
         )}
-      </Card>
+      </div>
+
+      {/* Action plan sidebar */}
+      {showActionPlan && (
+        <ActionPlanSidebar
+          projectId={projectId}
+          threadIds={actionPlanThreadIds}
+          onClose={() => setShowActionPlan(false)}
+        />
+      )}
     </div>
   )
 }

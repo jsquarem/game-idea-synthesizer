@@ -18,8 +18,10 @@ export default async function ProjectLayout({
     <div className="flex flex-1 flex-col md:flex-row">
       <SetProjectBreadcrumb projectId={projectId} projectName={project.name} />
       <ProjectSidebar projectId={projectId} />
-      <div className="min-w-0 flex-1 overflow-y-auto px-4 py-6 md:px-8 lg:px-10">
-        <div className="mx-auto max-w-6xl">{children}</div>
+      <div className="min-w-0 flex-1 overflow-y-auto" style={{ containerType: 'inline-size' }}>
+        <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 lg:px-10">
+          {children}
+        </div>
       </div>
     </div>
   )
