@@ -23,7 +23,7 @@ export default function SystemDetailLoading() {
         <div className="space-y-4">
           <Skeleton className="h-10 w-56" />
           <Card>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="space-y-4">
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-20 w-full" />
@@ -31,7 +31,7 @@ export default function SystemDetailLoading() {
           </Card>
         </div>
         <Card>
-          <CardContent className="p-6 space-y-4">
+          <CardContent className="space-y-4">
             <Skeleton className="h-6 w-24" />
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-2/3" />

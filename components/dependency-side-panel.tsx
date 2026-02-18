@@ -28,7 +28,7 @@ export function DependencySidePanel({ system, projectId, className }: Dependency
   const dependedOnBy = system.dependedOnBy ?? []
 
   return (
-    <Card className={cn('rounded-xl', className)}>
+    <Card className={className}>
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div>
@@ -44,7 +44,7 @@ export function DependencySidePanel({ system, projectId, className }: Dependency
           <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{system.purpose}</p>
         )}
       </CardHeader>
-      <CardContent className="space-y-4 pt-0">
+      <CardContent className="space-y-4">
         <div>
           <h4 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Depends on

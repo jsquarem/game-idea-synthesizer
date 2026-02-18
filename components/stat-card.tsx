@@ -32,7 +32,7 @@ export function StatCard({ icon: Icon, label, value, href, className, badge }: S
   )
 
   const cardClass = cn(
-    'transition-shadow hover:shadow-lg hover:-translate-y-0.5',
+    'transition-shadow duration-150 hover:shadow-md',
     href && 'cursor-pointer',
     className
   )
@@ -41,7 +41,7 @@ export function StatCard({ icon: Icon, label, value, href, className, badge }: S
     return (
       <Link href={href}>
         <Card className={cardClass}>
-          <CardContent className="flex flex-col gap-2 p-6">{content}</CardContent>
+          <CardContent className="flex flex-col gap-2">{content}</CardContent>
         </Card>
       </Link>
     )
@@ -49,7 +49,7 @@ export function StatCard({ icon: Icon, label, value, href, className, badge }: S
 
   return (
     <Card className={cardClass}>
-      <CardContent className="flex flex-col gap-2 p-6">{content}</CardContent>
+      <CardContent className="flex flex-col gap-2">{content}</CardContent>
     </Card>
   )
 }

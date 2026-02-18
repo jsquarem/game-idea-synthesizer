@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:blog.logrocket.com)",
+      "WebFetch(domain:www.eleken.co)",
+      "WebFetch(domain:excited.agency)",
+      "WebFetch(domain:www.merveilleux.design)",
+      "WebFetch(domain:uxplanet.org)",
+      "WebFetch(domain:www.graphiceagle.com)",
+      "WebFetch(domain:uiuxdesigntrends.com)",
+      "WebFetch(domain:www.frontendtools.tech)",
+      "WebFetch(domain:gunpowderlabs.com)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "WebFetch(domain:linear.app)",
+      "Bash(npm run build:*)"
+    ]
+  }
+}

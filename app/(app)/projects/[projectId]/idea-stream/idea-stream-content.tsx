@@ -304,7 +304,7 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
                     onChange={() => toggleThreadSelection(thread.id)}
                     onClick={(e) => e.stopPropagation()}
                     aria-label={`Select thread ${thread.id}`}
-                    className="mt-1 size-4 shrink-0"
+                    className="mt-1 size-4 shrink-0 rounded border-border accent-primary"
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">

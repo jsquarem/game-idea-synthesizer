@@ -37,7 +37,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <Card className="rounded-xl">
+      <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">Settings</h1>
@@ -49,7 +49,7 @@ export default async function SettingsPage() {
       </Card>
 
       <div className="grid gap-8 md:grid-cols-2">
-        <Card className="rounded-xl">
+        <Card>
           <CardHeader>
             <h2 className="text-lg font-semibold">Profile</h2>
             <p className="text-sm text-muted-foreground">
@@ -70,7 +70,7 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl">
+        <Card>
           <CardHeader>
             <h2 className="text-lg font-semibold">Workspace</h2>
             <p className="text-sm text-muted-foreground">
@@ -101,7 +101,7 @@ export default async function SettingsPage() {
         </Card>
       </div>
 
-      <Card className="rounded-xl border-dashed">
+      <Card className="border-dashed border-muted-foreground/30">
         <CardHeader>
           <h2 className="text-lg font-semibold">Prototype: user simulation</h2>
           <p className="text-sm text-muted-foreground">

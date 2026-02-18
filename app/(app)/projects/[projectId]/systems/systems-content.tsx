@@ -81,10 +81,11 @@ export function SystemsContent({
         title="Systems"
         actions={
           <div className="flex items-center gap-2">
-            <div className="flex rounded-lg border border-border p-1">
+            <div className="flex rounded-md border border-border p-0.5 bg-muted/50">
               <Button
                 variant={view === 'grid' ? 'secondary' : 'ghost'}
                 size="sm"
+                className="h-7 px-2.5 text-xs"
                 onClick={() => updateParams({ view: 'grid' })}
                 aria-label="Grid view"
               >
@@ -93,6 +94,7 @@ export function SystemsContent({
               <Button
                 variant={view === 'table' ? 'secondary' : 'ghost'}
                 size="sm"
+                className="h-7 px-2.5 text-xs"
                 onClick={() => updateParams({ view: 'table' })}
                 aria-label="Table view"
               >

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 export default function SettingsLoading() {
   return (
     <div className="space-y-8">
-      <Card className="rounded-xl">
+      <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4">
           <div className="space-y-2">
             <Skeleton className="h-8 w-32" />
@@ -12,7 +12,7 @@ export default function SettingsLoading() {
           </div>
         </CardHeader>
       </Card>
-      <Card className="rounded-xl">
+      <Card>
         <CardHeader>
           <Skeleton className="h-6 w-20" />
         </CardHeader>
@@ -34,7 +34,7 @@ export default function SettingsLoading() {
           </div>
         </CardContent>
       </Card>
-      <Card className="rounded-xl">
+      <Card>
         <CardHeader>
           <Skeleton className="h-6 w-20" />
         </CardHeader>

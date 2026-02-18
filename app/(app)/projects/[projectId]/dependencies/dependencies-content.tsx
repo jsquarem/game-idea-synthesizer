@@ -65,7 +65,7 @@ export function DependenciesContent({
 
       <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,360px)]">
         <div className="space-y-4">
-          <Card className="min-h-[70vh] rounded-xl">
+          <Card className="min-h-[70vh]">
             <CardContent className="relative p-0">
               <div className="absolute right-2 top-2 z-10 flex flex-wrap items-center gap-2">
                 <Button variant="secondary" size="icon" aria-label="Zoom in" disabled>
@@ -114,7 +114,7 @@ export function DependenciesContent({
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl">
+          <Card>
             <CardHeader>
               <h2 className="text-lg font-semibold">Implementation order</h2>
             </CardHeader>
@@ -141,7 +141,7 @@ export function DependenciesContent({
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl">
+          <Card>
             <CardHeader>
               <h2 className="text-lg font-semibold">Edges</h2>
             </CardHeader>
@@ -175,7 +175,7 @@ export function DependenciesContent({
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl">
+          <Card>
             <CardHeader>
               <h2 className="text-lg font-semibold">Add dependency</h2>
             </CardHeader>
@@ -189,8 +189,8 @@ export function DependenciesContent({
           {selectedSystem ? (
             <DependencySidePanel system={selectedSystem} projectId={projectId} />
           ) : (
-            <Card className="rounded-xl">
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center text-center">
                 <p className="text-sm text-muted-foreground">
                   Click a system in the implementation order or edges list to view details.
                 </p>

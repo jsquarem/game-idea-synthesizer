@@ -15,8 +15,8 @@ function formatDate(d: Date) {
 
 export function DashboardProjectCard({ project }: DashboardProjectCardProps) {
   return (
-    <Card className="transition-shadow hover:shadow-lg flex flex-col h-full">
-      <CardContent className="p-6 flex flex-col flex-1 min-h-0">
+    <Card className="transition-shadow duration-150 hover:shadow-md flex flex-col h-full">
+      <CardContent className="flex flex-col flex-1 min-h-0">
         <Link
           href={`/projects/${project.id}/overview`}
           className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md -m-1 p-1 flex-1 min-h-0"

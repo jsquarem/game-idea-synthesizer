@@ -5,7 +5,7 @@ export default function OverviewLoading() {
   return (
     <div className="space-y-8">
       <Card>
-        <CardContent className="p-6 space-y-3">
+        <CardContent className="space-y-3">
           <Skeleton className="h-8 w-64" />
           <div className="flex gap-2">
             <Skeleton className="h-6 w-20" />
@@ -17,7 +17,7 @@ export default function OverviewLoading() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[1, 2, 3, 4].map((i) => (
           <Card key={i}>
-            <CardContent className="p-6 space-y-2">
+            <CardContent className="space-y-2">
               <Skeleton className="h-5 w-5" />
               <Skeleton className="h-8 w-12" />
               <Skeleton className="h-4 w-20" />
@@ -28,14 +28,14 @@ export default function OverviewLoading() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Card>
-            <CardContent className="p-6">
+            <CardContent>
               <Skeleton className="h-6 w-40 mb-4" />
               <Skeleton className="h-[200px] w-full rounded-lg" />
             </CardContent>
           </Card>
         </div>
         <Card>
-          <CardContent className="p-6 space-y-4">
+          <CardContent className="space-y-4">
             <Skeleton className="h-6 w-32" />
             {[1, 2, 3].map((i) => (
               <div key={i} className="flex gap-3">

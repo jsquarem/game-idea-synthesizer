@@ -20,7 +20,7 @@ export default function SystemsLoading() {
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <li key={i}>
             <Card>
-              <CardContent className="p-6 space-y-3">
+              <CardContent className="space-y-3">
                 <Skeleton className="h-5 w-3/4" />
                 <Skeleton className="h-4 w-40 font-mono" />
                 <div className="flex gap-2">
