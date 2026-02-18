@@ -36,6 +36,12 @@ export type MessageWithAuthor = IdeaStreamMessage & {
   author: Pick<AppUser, 'id' | 'displayName' | 'avatarColor'>
 }
 
+export type ReadByUser = Pick<AppUser, 'id' | 'displayName' | 'avatarColor'>
+
+export type MessageWithAuthorAndReadBy = MessageWithAuthor & {
+  readBy: ReadByUser[]
+}
+
 export type ThreadWithMessagesAndAuthors = IdeaStreamThread & {
   messages: MessageWithAuthor[]
   createdBy: Pick<AppUser, 'id' | 'displayName' | 'avatarColor'>
@@ -121,7 +127,7 @@ export async function listThreadsForProject(
         where: {
           threadId: t.id,
           ...(lastReadMap.get(t.id)
-            ? { updatedAt: { gt: lastReadMap.get(t.id)! } }
+            ? { createdAt: { gt: lastReadMap.get(t.id)! } }
             : {}),
         },
       })
@@ -152,6 +158,47 @@ function truncatePreview(content: string, max = 80): string {
   return trimmed.length <= max ? trimmed : trimmed.slice(0, max) + '…'
 }
 
+export type RecentThreadForOverview = {
+  id: string
+  title: string | null
+  lastMessagePreview: string | null
+  updatedAt: Date
+}
+
+export async function listRecentThreadsForOverview(
+  projectId: string,
+  limit: number,
+  cursor?: string
+): Promise<RecentThreadForOverview[]> {
+  const take = Math.min(limit, 100)
+  const threads = await prisma.ideaStreamThread.findMany({
+    where: { projectId },
+    orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+    take: take + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    select: {
+      id: true,
+      title: true,
+      updatedAt: true,
+      messages: {
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        select: { content: true },
+      },
+    },
+  })
+  const list = threads.slice(0, take)
+  return list.map((t) => {
+    const lastMsg = t.messages[0] as { content: string } | undefined
+    return {
+      id: t.id,
+      title: t.title,
+      lastMessagePreview: lastMsg ? truncatePreview(lastMsg.content) : null,
+      updatedAt: t.updatedAt,
+    }
+  })
+}
+
 export async function listMessages(
   threadId: string,
   since?: Date
@@ -165,6 +212,39 @@ export async function listMessages(
     include: {
       author: { select: { id: true, displayName: true, avatarColor: true } },
     },
+  })
+}
+
+export async function listMessagesWithReadBy(
+  threadId: string,
+  since?: Date
+): Promise<MessageWithAuthorAndReadBy[]> {
+  const [messages, reads] = await Promise.all([
+    prisma.ideaStreamMessage.findMany({
+      where: {
+        threadId,
+        ...(since ? { createdAt: { gte: since } } : {}),
+      },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        author: { select: { id: true, displayName: true, avatarColor: true } },
+      },
+    }),
+    prisma.ideaStreamThreadRead.findMany({
+      where: { threadId },
+      include: {
+        user: { select: { id: true, displayName: true, avatarColor: true } },
+      },
+    }),
+  ])
+  return messages.map((msg) => {
+    const readBy = reads
+      .filter(
+        (r) =>
+          r.lastReadAt >= msg.createdAt && r.userId !== msg.authorUserId
+      )
+      .map((r) => r.user)
+    return { ...msg, readBy }
   })
 }
 

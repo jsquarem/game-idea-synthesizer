@@ -1,0 +1,38 @@
+---
+description: Next.js core principles, code style, and formatting
+globs: app/**/*.tsx, app/**/*.ts, components/**/*.tsx, lib/**/*.ts, store/**/*.ts, hooks/**/*.ts
+alwaysApply: true
+---
+
+# Next.js Core Principles & Code Style
+
+This project follows a **Server-First architecture** using the Next.js App Router.
+
+## Core Principles
+
+- Default to Server Components
+- Add `'use client'` only when strictly required
+- Prefer TypeScript over PropTypes
+- Prefer composition over abstraction
+- Keep components small and focused
+- Favor clarity over cleverness
+
+## Code Style
+
+- Use TypeScript
+- Use functional and declarative patterns
+- Avoid classes
+- Prefer named exports
+- Use descriptive variable names (isLoading, hasError, shouldFetch)
+- Use early returns and guard clauses
+- Keep the happy path last
+
+## Formatting
+
+- 2 space indentation
+- Single quotes
+- No unnecessary semicolons
+- Always use `===`
+- No unused variables
+- Space after keywords; space around infix operators
+- Use curly braces for multi-line blocks

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { findProjectById } from '@/lib/repositories/project.repository'
 import { ProjectSidebar } from '@/components/project-sidebar'
+import { SetProjectBreadcrumb } from '@/components/set-project-breadcrumb'
 
 export default async function ProjectLayout({
   children,
@@ -15,6 +16,7 @@ export default async function ProjectLayout({
 
   return (
     <div className="flex flex-1 flex-col md:flex-row">
+      <SetProjectBreadcrumb projectId={projectId} projectName={project.name} />
       <ProjectSidebar projectId={projectId} />
       <div className="min-w-0 flex-1 px-4 py-6 md:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">{children}</div>

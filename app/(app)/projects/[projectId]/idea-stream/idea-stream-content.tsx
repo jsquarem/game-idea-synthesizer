@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -14,11 +14,9 @@ import {
   markIdeaStreamThreadReadAction,
   finalizeIdeaStreamThreadsAction,
 } from '@/app/actions/idea-stream.actions'
-import { MessageCircle, Send, Reply, Pencil, Trash2 } from 'lucide-react'
+import { MessageCircle, Send, Reply, Pencil, Trash2, RefreshCw, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { avatarColorFromUser, getInitials } from '@/lib/avatar'
-
-const POLL_INTERVAL_MS = 2000
 
 type ThreadListItem = {
   id: string
@@ -33,6 +31,8 @@ type ThreadListItem = {
   unreadCount: number
 }
 
+type ReadByUser = { id: string; displayName: string | null; avatarColor: string | null }
+
 type MessageItem = {
   id: string
   threadId: string
@@ -44,6 +44,7 @@ type MessageItem = {
   editedAt: string | null
   deletedAt: string | null
   author: { id: string; displayName: string | null; avatarColor: string | null }
+  readBy: ReadByUser[]
 }
 
 export function IdeaStreamContent({ projectId }: { projectId: string }) {
@@ -54,12 +55,16 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
   const [selectedThreadIds, setSelectedThreadIds] = useState<Set<string>>(new Set())
   const [replyToMessageId, setReplyToMessageId] = useState<string | null>(null)
   const [replyToSnippet, setReplyToSnippet] = useState<string>('')
+  const [replyToAuthor, setReplyToAuthor] = useState<string | null>(null)
   const [draftContent, setDraftContent] = useState('')
   const [newThreadContent, setNewThreadContent] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [editingContent, setEditingContent] = useState('')
+  const [sseReconnect, setSseReconnect] = useState(0)
+  const activeThreadIdRef = useRef(activeThreadId)
+  activeThreadIdRef.current = activeThreadId
 
   const fetchUserId = useCallback(async () => {
     const res = await fetch('/api/me')
@@ -97,17 +102,51 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
   useEffect(() => {
     if (!userId) return
     fetchThreads()
-    const t = setInterval(fetchThreads, POLL_INTERVAL_MS)
-    return () => clearInterval(t)
   }, [userId, fetchThreads])
 
   useEffect(() => {
     if (!userId || !activeThreadId) return
     markIdeaStreamThreadReadAction(projectId, activeThreadId).catch(() => {})
     fetchMessages()
-    const t = setInterval(fetchMessages, POLL_INTERVAL_MS)
-    return () => clearInterval(t)
   }, [userId, activeThreadId, projectId, fetchMessages])
+
+  const FALLBACK_POLL_MS = 25_000
+  useEffect(() => {
+    if (!userId) return
+    const poll = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchThreads()
+        if (activeThreadIdRef.current) fetchMessages()
+      }
+    }
+    const t = setInterval(poll, FALLBACK_POLL_MS)
+    return () => clearInterval(t)
+  }, [userId, activeThreadId, fetchThreads, fetchMessages])
+
+  useEffect(() => {
+    if (!userId) return
+    const url = `/api/projects/${projectId}/idea-stream/events`
+    const es = new EventSource(url)
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
+    es.onmessage = (e) => {
+      try {
+        const event = JSON.parse(e.data) as { type: string; threadId?: string }
+        if (event.type === 'threads_updated') fetchThreads()
+        if (event.type === 'messages_updated' && event.threadId === activeThreadIdRef.current) fetchMessages()
+      } catch {
+        // ignore parse errors (e.g. keepalive comment)
+      }
+    }
+    es.onerror = () => {
+      es.close()
+      const delay = Math.min(1000 * 2 ** Math.min(sseReconnect, 4), 30_000)
+      reconnectTimeout = setTimeout(() => setSseReconnect((k) => k + 1), delay)
+    }
+    return () => {
+      es.close()
+      if (reconnectTimeout) clearTimeout(reconnectTimeout)
+    }
+  }, [projectId, userId, sseReconnect, fetchThreads, fetchMessages])
 
   const handleCreateThread = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -150,6 +189,7 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
       setDraftContent('')
       setReplyToMessageId(null)
       setReplyToSnippet('')
+      setReplyToAuthor(null)
       fetchMessages()
       fetchThreads()
     } else setError(result.error)
@@ -272,11 +312,23 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(thread.lastActivityAt).toLocaleString()}
-                      {thread.unread && (
-                        <span className="ml-1 inline-block size-2 rounded-full bg-primary" />
-                      )}
                     </p>
                   </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      fetchThreads().then(() => {
+                        if (thread.id === activeThreadId) fetchMessages()
+                      })
+                    }}
+                    aria-label={`Refresh thread ${thread.title || 'Untitled'}`}
+                  >
+                    <RefreshCw className="size-4" />
+                  </Button>
                 </div>
               ))}
             </div>
@@ -314,11 +366,17 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
             </CardHeader>
             <ScrollArea className="flex-1">
               <div className="space-y-3 p-4">
-                {messages.map((msg) => (
+                {messages.map((msg) => {
+                  const authorLabel =
+                    msg.author.displayName?.trim() ||
+                    (activeThread && msg.authorUserId === activeThread.createdByUserId
+                      ? 'Creator'
+                      : 'Responder')
+                  return (
                   <div
                     key={msg.id}
                     className={cn(
-                      'flex gap-3',
+                      'group flex gap-3',
                       msg.parentMessageId && 'ml-6 border-l-2 border-muted pl-3'
                     )}
                   >
@@ -331,18 +389,14 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">
-                          {msg.author.displayName?.trim() ||
-                            (activeThread &&
-                            msg.authorUserId === activeThread.createdByUserId
-                              ? 'Creator'
-                              : 'Responder')}
+                          {authorLabel}
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {new Date(msg.createdAt).toLocaleString()}
                           {msg.editedAt && ' (edited)'}
                         </span>
-                        {msg.authorUserId === userId && !msg.deletedAt && (
-                          <span className="flex gap-1">
+                        {!msg.deletedAt && (
+                          <span className="inline-flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -350,32 +404,37 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
                               onClick={() => {
                                 setReplyToMessageId(msg.id)
                                 setReplyToSnippet(msg.content.slice(0, 50))
+                                setReplyToAuthor(authorLabel)
                               }}
                               aria-label="Reply"
                             >
                               <Reply className="size-3" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-6"
-                              onClick={() => {
-                                setEditingMessageId(msg.id)
-                                setEditingContent(msg.content)
-                              }}
-                              aria-label="Edit"
-                            >
-                              <Pencil className="size-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-6 text-destructive"
-                              onClick={() => handleDeleteMessage(msg.id)}
-                              aria-label="Delete"
-                            >
-                              <Trash2 className="size-3" />
-                            </Button>
+                            {msg.authorUserId === userId && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-6"
+                                  onClick={() => {
+                                    setEditingMessageId(msg.id)
+                                    setEditingContent(msg.content)
+                                  }}
+                                  aria-label="Edit"
+                                >
+                                  <Pencil className="size-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-6 text-destructive"
+                                  onClick={() => handleDeleteMessage(msg.id)}
+                                  aria-label="Delete"
+                                >
+                                  <Trash2 className="size-3" />
+                                </Button>
+                              </>
+                            )}
                           </span>
                         )}
                       </div>
@@ -417,24 +476,56 @@ export function IdeaStreamContent({ projectId }: { projectId: string }) {
                           {msg.content}
                         </p>
                       )}
+                      {Array.isArray(msg.readBy) && msg.readBy.length > 0 && (
+                        <div className="mt-1 flex items-center gap-1" aria-label={`Read by ${msg.readBy.map((u) => u.displayName?.trim() || 'Unknown').join(', ')}`}>
+                          {msg.readBy.map((reader) => (
+                            <span
+                              key={reader.id}
+                              className="relative inline-flex shrink-0"
+                              title={reader.displayName?.trim() || undefined}
+                            >
+                              <span
+                                className="flex size-5 items-center justify-center rounded-full text-[10px] font-medium text-white ring-2 ring-background"
+                                style={{ backgroundColor: avatarColorFromUser(reader.id, reader.avatarColor) }}
+                              >
+                                {getInitials(reader.displayName)}
+                              </span>
+                              <span
+                                className="absolute -bottom-0.5 -right-0.5 flex size-3 items-center justify-center rounded-full bg-black text-white"
+                                aria-hidden
+                              >
+                                <Check className="size-2.5 stroke-[3]" />
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </ScrollArea>
             <div className="border-t p-3">
               {replyToMessageId && (
-                <div className="mb-2 flex items-center justify-between rounded bg-muted/50 px-2 py-1 text-sm">
-                  <span className="text-muted-foreground">
-                    Replying to: {replyToSnippet}…
-                  </span>
+                <div className="mb-2 flex items-start justify-between gap-2 rounded border-l-2 border-primary/30 bg-muted/50 px-3 py-2 text-sm">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-foreground">
+                      Replying to {replyToAuthor ?? '…'}
+                    </p>
+                    <p className="truncate text-muted-foreground">
+                      {replyToSnippet}{replyToSnippet.length >= 50 ? '…' : ''}
+                    </p>
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => {
                       setReplyToMessageId(null)
                       setReplyToSnippet('')
+                      setReplyToAuthor(null)
                     }}
+                    aria-label="Cancel reply"
                   >
                     Cancel
                   </Button>

@@ -7,18 +7,21 @@ import {
   findThreadById,
   findMessageById,
   listThreadsForProject,
-  listMessages,
+  listRecentThreadsForOverview,
+  listMessagesWithReadBy,
   updateMessageContent,
   softDeleteMessage,
   upsertThreadRead,
   getThreadsWithMessagesForFinalize,
   isProjectMember,
   type ThreadListItem,
-  type MessageWithAuthor,
+  type RecentThreadForOverview,
+  type MessageWithAuthorAndReadBy,
   type ThreadWithMessagesAndAuthors,
 } from '../repositories/idea-stream.repository'
 import { createBrainstorm } from '../repositories/brainstorm.repository'
 import { prisma } from '@/lib/db'
+import { publish } from '@/lib/idea-stream-events'
 
 const MAX_MESSAGE_LENGTH = 10_000
 
@@ -73,6 +76,8 @@ export async function createThreadWithFirstMessage(
       authorUserId: userId,
       content: trimmed,
     })
+    publish(projectId, { type: 'threads_updated' })
+    publish(projectId, { type: 'messages_updated', threadId: thread.id })
     return { success: true, data: { thread, message } }
   } catch (e) {
     return {
@@ -115,6 +120,8 @@ export async function postMessage(
       content: trimmed,
       parentMessageId: parentMessageId ?? null,
     })
+    publish(projectId, { type: 'threads_updated' })
+    publish(projectId, { type: 'messages_updated', threadId })
     return { success: true, data: message }
   } catch (e) {
     return {
@@ -154,6 +161,8 @@ export async function editMessage(
       where: { id: message.threadId },
       data: { updatedAt: new Date() },
     })
+    publish(message.projectId, { type: 'threads_updated' })
+    publish(message.projectId, { type: 'messages_updated', threadId: message.threadId })
     return { success: true, data: updated }
   } catch (e) {
     return {
@@ -182,6 +191,8 @@ export async function deleteMessage(
       where: { id: message.threadId },
       data: { updatedAt: new Date() },
     })
+    publish(message.projectId, { type: 'threads_updated' })
+    publish(message.projectId, { type: 'messages_updated', threadId: message.threadId })
     return { success: true, data: updated }
   } catch (e) {
     return {
@@ -207,6 +218,7 @@ export async function markThreadRead(
 
   try {
     await upsertThreadRead(projectId, threadId, userId, lastReadAt)
+    publish(projectId, { type: 'messages_updated', threadId })
     return { success: true, data: undefined }
   } catch (e) {
     return {
@@ -237,14 +249,50 @@ export async function getThreadList(
   }
 }
 
+export async function getRecentThreadActivity(
+  projectId: string,
+  limit: number,
+  cursor?: string
+): Promise<ServiceResult<RecentThreadForOverview[]>> {
+  const project = await findProjectById(projectId)
+  if (!project) return { success: false, error: 'Project not found', code: 'NOT_FOUND' }
+  try {
+    const list = await listRecentThreadsForOverview(projectId, limit, cursor)
+    return { success: true, data: list }
+  } catch (e) {
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : 'Failed to load recent activity',
+      code: 'INTERNAL',
+    }
+  }
+}
+
+export async function getIdeaStreamUnreadCount(
+  projectId: string,
+  userId: string
+): Promise<ServiceResult<number>> {
+  const access = await ensureUserCanAccessProject(projectId, userId)
+  if (!access.success) return access
+  try {
+    const threads = await listThreadsForProject(projectId, userId, { limit: 100 })
+    const total = threads.reduce((sum, t) => sum + t.unreadCount, 0)
+    return { success: true, data: total }
+  } catch (e) {
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : 'Failed to get unread count',
+      code: 'INTERNAL',
+    }
+  }
+}
+
 export async function getThreadMessages(
   projectId: string,
   threadId: string,
   userId: string,
   since?: Date
-): Promise<
-  ServiceResult<(IdeaStreamMessage & { author: Pick<{ id: string; displayName: string | null; avatarColor: string | null }, 'id' | 'displayName' | 'avatarColor'> })[]>
-> {
+): Promise<ServiceResult<MessageWithAuthorAndReadBy[]>> {
   const access = await ensureUserCanAccessProject(projectId, userId)
   if (!access.success) return access
 
@@ -253,7 +301,7 @@ export async function getThreadMessages(
     return { success: false, error: 'Thread not found', code: 'NOT_FOUND' }
 
   try {
-    const messages = await listMessages(threadId, since)
+    const messages = await listMessagesWithReadBy(threadId, since)
     return { success: true, data: messages }
   } catch (e) {
     return {

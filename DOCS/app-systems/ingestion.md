@@ -49,4 +49,5 @@ Handles the intake of raw brainstorming content from multiple sources (manual pa
 - Batch import from multiple sources
 
 ## Change Log
-(Chronological updates)
+
+- 2026-02-17: Doc synced with codebase; current implementation and code mapping.

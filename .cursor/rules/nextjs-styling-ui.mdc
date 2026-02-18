@@ -1,0 +1,26 @@
+---
+description: Tailwind styling, Shadcn/Radix UI, component structure
+globs: app/**/*.tsx, app/**/*.ts, components/**/*.tsx, lib/**/*.ts, store/**/*.ts, hooks/**/*.ts
+alwaysApply: true
+---
+
+# Styling & UI
+
+## Tailwind
+
+- Use Tailwind CSS (mobile-first)
+- Avoid global CSS unless necessary
+- Prefer utility-first styling
+- Do not use `@apply`
+- Keep components visually consistent
+
+## Shadcn & Radix
+
+- Use Shadcn as base UI primitives
+- Extend via composition
+- Avoid modifying library internals
+- Keep UI accessible by default
+
+## Component Structure
+
+Prefer single-file components unless complexity justifies splitting.

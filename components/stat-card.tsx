@@ -9,12 +9,23 @@ type StatCardProps = {
   value: string | number
   href?: string
   className?: string
+  /** Optional badge shown in the card (e.g. "Unread", "Up to date") */
+  badge?: React.ReactNode
 }
 
-export function StatCard({ icon: Icon, label, value, href, className }: StatCardProps) {
+export function StatCard({ icon: Icon, label, value, href, className, badge }: StatCardProps) {
   const content = (
     <>
-      <Icon className="size-5 text-muted-foreground" />
+      {badge != null ? (
+        <div className="flex items-start justify-between gap-2">
+          <Icon className="size-5 shrink-0 text-muted-foreground" />
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">
+            {badge}
+          </span>
+        </div>
+      ) : (
+        <Icon className="size-5 text-muted-foreground" />
+      )}
       <p className="text-2xl font-bold">{value}</p>
       <p className="text-sm text-muted-foreground">{label}</p>
     </>

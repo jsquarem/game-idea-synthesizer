@@ -1,0 +1,33 @@
+---
+description: Check and update DOCS after code changes; recommend new docs when scope is large.
+alwaysApply: true
+---
+
+# Docs After Code Changes
+
+After updating code, always consider whether documentation needs to change.
+
+## Map changed code to docs
+
+- **App systems:** Each `DOCS/app-systems/*.md` has a **Code Mapping** section listing paths (e.g. `lib/services/`, `app/actions/`). If a changed file appears in a doc’s Code Mapping, that doc is a candidate for review.
+- **Architecture:** Changes under `prisma/`, `lib/repositories/`, `lib/services/`, parsers, or graph/AI code → check `DOCS/backend-architecture.md`. Changes under `app/` routes or `components/` → check `DOCS/frontend-architecture.md`.
+- **Design/behavior:** UX or feature changes → `DOCS/design-specification.md`; user-facing flows → `DOCS/user-manual.md` when present.
+
+## Update existing docs
+
+- Read the relevant sections of each candidate doc.
+- If anything is wrong or incomplete (Code Mapping, Current Implementation, schema snippets, route trees), update it with minimal, targeted edits.
+
+## Changelog when updating docs
+
+When you add or edit any doc under `DOCS/` or `README.md`, ensure it has a **Change Log** section at the end of the file. Append an entry in the form `- YYYY-MM-DD: brief description` (or `YYYY-MM` for month-level). List entries chronologically (oldest first).
+
+## New docs only when scope is large
+
+Do not create new doc files unless the user asks. When changes warrant new documentation, tell the user and describe how:
+
+- **New subsystem** (new service + repo + actions/API + UI): Recommend adding `DOCS/app-systems/<name>.md` using the same structure as existing app-system docs (Purpose, Responsibilities, Inputs, Outputs, Dependencies, Code Mapping, Current Implementation, Known Limitations).
+- **New major layer or route subtree:** Recommend adding a new numbered section to `backend-architecture.md` or `frontend-architecture.md`.
+- **Multi-step feature or migration:** Recommend adding `DOCS/plans/<name>.md`.
+
+Output a clear **Documentation recommendation:** with scope, suggested path, and structure (e.g. “I would add `DOCS/app-systems/foo.md` following the app-system template. Should I create it?”).

@@ -309,3 +309,7 @@ Use mocked data or server props:
 
 ---
 End of spec.
+
+## Change Log
+
+- 2026-02-17: UI implementation spec for frontend handoff.

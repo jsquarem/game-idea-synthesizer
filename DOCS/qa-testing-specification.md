@@ -1412,3 +1412,7 @@ export async function addDependencyViaUI(
   await page.getByRole('button', { name: /confirm|add/i }).click()
 }
 ```
+
+## Change Log
+
+- 2026-02-17: QA and testing spec v1.0.

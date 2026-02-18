@@ -385,3 +385,7 @@ Prefer server as source of truth; client polling keeps it fresh.
 7. Settings display name  
 
 End of spec.
+
+## Change Log
+
+- 2026-02-17: Idea Stream (collab) implementation spec; threads, replies, finalize, polling.

@@ -104,3 +104,6 @@ This document captures the recommended follow-up work after the current implemen
 5. Full test suite expansion
 6. Production hardening + docs finalization
 
+## Change Log
+
+- 2026-02-17: Next steps captured after current implementation pass.

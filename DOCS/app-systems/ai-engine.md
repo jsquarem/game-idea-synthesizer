@@ -27,6 +27,7 @@ Provides a provider-agnostic interface for AI completion calls. Manages prompt t
 
 ## Dependencies
 - doc-store (for context assembly — reads systems, plans, dependencies)
+- workspace (for provider config: API keys stored encrypted per workspace)
 - External AI provider APIs (OpenAI, Anthropic, Google)
 - Prompt history repository (for persistence)
 
@@ -38,11 +39,12 @@ Provides a provider-agnostic interface for AI completion calls. Manages prompt t
 - Templates: `lib/ai/templates/*.ts`
 - Template registry: `lib/ai/templates/registry.ts`
 - Context assembly: `lib/ai/context.ts`
+- **Workspace provider config (decrypt at runtime):** `lib/ai/get-workspace-provider-config.ts` — `getDecryptedWorkspaceProviderConfig(workspaceId, providerId)` returns `{ apiKey, baseUrl, defaultModel }` for server-side use only; never send apiKey to client.
 - Service integration: `lib/services/prompt.service.ts`
 - API route (streaming): `app/api/ai/stream/route.ts`
 
 ## Current Implementation
-(To be filled during implementation)
+- Workspace-scoped AI config is stored encrypted (see workspace app-system and `lib/security/encryption.ts`). Provider config is decrypted only in server runtime when initializing or calling AI providers; the DB holds only ciphertext.
 
 ## Known Limitations
 - No function calling / tool use support in v1
@@ -59,4 +61,5 @@ Provides a provider-agnostic interface for AI completion calls. Manages prompt t
 - Local model support (Ollama, vLLM)
 
 ## Change Log
-(Chronological updates)
+
+- 2026-02-17: Doc synced with codebase; current implementation and code mapping.

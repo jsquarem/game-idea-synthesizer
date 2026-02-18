@@ -1,11 +1,36 @@
 import Link from 'next/link'
-import { Settings, Lightbulb, Boxes, GitBranch, Calendar, ArrowRight } from 'lucide-react'
-import { getProjectDashboard } from '@/lib/services/project.service'
+import { Settings, Lightbulb, Boxes, GitBranch, Calendar, ArrowRight, MessageCircle } from 'lucide-react'
+import { getProjectDashboard, getOverviewRecentActivity } from '@/lib/services/project.service'
+import { getIdeaStreamUnreadCount } from '@/lib/services/idea-stream.service'
+import { getCurrentUserId } from '@/lib/get-current-user'
 import { notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/status-badge'
 import { StatCard } from '@/components/stat-card'
+import type { ProjectActivityType } from '@/lib/repositories/project-activity.repository'
+
+const ACTIVITY_TYPE_LABELS: Record<ProjectActivityType, string> = {
+  thread: 'Idea Stream',
+  brainstorm: 'Brainstorm',
+  system: 'System',
+  export: 'Export',
+  version_plan: 'Version plan',
+  dependency: 'Dependency',
+}
+
+function formatRelativeTime(date: Date): string {
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60_000)
+  const diffHours = Math.floor(diffMs / 3_600_000)
+  const diffDays = Math.floor(diffMs / 86_400_000)
+  if (diffMins < 1) return 'Just now'
+  if (diffMins < 60) return `${diffMins} min ago`
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
+  if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
+  return date.toLocaleDateString()
+}
 
 export default async function ProjectOverviewPage({
   params,
@@ -13,16 +38,20 @@ export default async function ProjectOverviewPage({
   params: Promise<{ projectId: string }>
 }) {
   const { projectId } = await params
-  const result = await getProjectDashboard(projectId)
-  if (!result.success) notFound()
+  const [dashboardResult, activityResult, unreadResult] = await Promise.all([
+    getProjectDashboard(projectId),
+    getOverviewRecentActivity(projectId),
+    getCurrentUserId().then((uid) =>
+      uid ? getIdeaStreamUnreadCount(projectId, uid) : Promise.resolve({ success: true as const, data: 0 })
+    ),
+  ])
+  if (!dashboardResult.success) notFound()
 
-  const { project, systemCount, brainstormCount, versionPlanCount, dependencyCount } = result.data
-
-  const recentActivity = [
-    { icon: 'system', text: 'System "Combat" updated', time: '2 hours ago' },
-    { icon: 'brainstorm', text: 'New brainstorm session added', time: '1 day ago' },
-    { icon: 'dependency', text: 'Dependency added: Core → Combat', time: '2 days ago' },
-  ]
+  const { project, systemCount, brainstormCount, versionPlanCount, dependencyCount, threadCount } =
+    dashboardResult.data
+  const recentActivity = activityResult.success ? activityResult.data : []
+  const ideaStreamUnread = unreadResult.success ? unreadResult.data : 0
+  const ideaStreamBadge = ideaStreamUnread > 0 ? `${ideaStreamUnread} unread` : 'Up to date'
 
   return (
     <div className="space-y-8">
@@ -53,7 +82,16 @@ export default async function ProjectOverviewPage({
 
       <section>
         <h2 className="sr-only">Quick stats</h2>
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <li>
+            <StatCard
+              icon={MessageCircle}
+              label="Idea Stream"
+              value={threadCount}
+              href={`/projects/${projectId}/idea-stream`}
+              badge={ideaStreamBadge}
+            />
+          </li>
           <li>
             <StatCard
               icon={Lightbulb}
@@ -113,17 +151,36 @@ export default async function ProjectOverviewPage({
               <h2 className="text-lg font-semibold">Recent activity</h2>
             </CardHeader>
             <CardContent>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Last activity of each type
+              </p>
               <ul className="space-y-4">
-                {recentActivity.map((item, i) => (
-                  <li key={i} className="flex gap-3 text-sm">
-                    <span className="size-2 shrink-0 rounded-full bg-muted-foreground/50 mt-1.5" />
-                    <div>
-                      <p className="text-foreground">{item.text}</p>
-                      <p className="text-muted-foreground">{item.time}</p>
-                    </div>
-                  </li>
-                ))}
+                {recentActivity.length === 0 ? (
+                  <li className="text-sm text-muted-foreground">No activity yet</li>
+                ) : (
+                  recentActivity.map((item) => (
+                    <li key={`${item.type}-${item.id}`} className="flex gap-3 text-sm">
+                      <span className="size-2 shrink-0 rounded-full bg-muted-foreground/50 mt-1.5" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-foreground">
+                          <Link href={item.href} className="hover:underline">
+                            <span className="font-medium text-muted-foreground">
+                              {ACTIVITY_TYPE_LABELS[item.type]}:{' '}
+                            </span>
+                            {item.label}
+                          </Link>
+                        </p>
+                        <p className="text-muted-foreground">
+                          {formatRelativeTime(item.occurredAt)}
+                        </p>
+                      </div>
+                    </li>
+                  ))
+                )}
               </ul>
+              <Button variant="link" className="mt-2 p-0 text-sm" asChild>
+                <Link href={`/projects/${projectId}/activity`}>View full history</Link>
+              </Button>
             </CardContent>
           </Card>
         </div>
