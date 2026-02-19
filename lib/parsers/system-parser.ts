@@ -1,4 +1,4 @@
-import type { GameSystemData, ParseSystemMarkdownResult } from './system-parser.types'
+import type { GameSystemData, ParseSystemMarkdownResult, SystemDetailStub } from './system-parser.types'
 
 function splitMarkdownSections(markdown: string): Map<string, string> {
   const sections = new Map<string, string>()
@@ -67,6 +67,33 @@ function normalizeCriticality(s: string): string {
   return lower || 'important'
 }
 
+const DETAIL_TYPES = ['mechanic', 'input', 'output', 'content', 'ui_hint'] as const
+
+function parseSystemDetailsSection(text: string): SystemDetailStub[] {
+  if (!text.trim()) return []
+  const stubs: SystemDetailStub[] = []
+  const blocks = text.split(/^###\s+/m).filter((b) => b.trim())
+  for (const block of blocks) {
+    const firstLineEnd = block.indexOf('\n')
+    const firstLine = firstLineEnd >= 0 ? block.slice(0, firstLineEnd).trim() : block.trim()
+    const spec = firstLineEnd >= 0 ? block.slice(firstLineEnd + 1).trim() : ''
+    const match = firstLine.match(/^(.+?)\s*\((\w+)\)\s*$/)
+    const name = match ? match[1].trim() : firstLine
+    const detailType = match && DETAIL_TYPES.includes(match[2] as (typeof DETAIL_TYPES)[number])
+      ? match[2]
+      : 'mechanic'
+    stubs.push({ name: name || 'System detail', detailType, spec })
+  }
+  return stubs
+}
+
+function renderSystemDetailsSection(systemDetails: SystemDetailStub[]): string {
+  if (!systemDetails.length) return ''
+  return systemDetails
+    .map((b) => `### ${b.name} (${b.detailType})\n\n${b.spec || ''}`.trim())
+    .join('\n\n')
+}
+
 export function parseSystemMarkdown(markdown: string): ParseSystemMarkdownResult {
   if (!markdown || !markdown.trim()) {
     return { ok: false, error: 'Empty input' }
@@ -106,6 +133,7 @@ export function parseSystemMarkdown(markdown: string): ParseSystemMarkdownResult
     implementationNotes: getSection(sections, 'Implementation Notes')?.trim() ?? '',
     openQuestions: getSection(sections, 'Open Questions')?.trim() ?? '',
     changeLog: parseChangeLogEntries(getSection(sections, 'Change Log') ?? ''),
+    systemDetails: parseSystemDetailsSection(getSection(sections, 'System details') ?? ''),
   }
   return { ok: true, data }
 }
@@ -173,5 +201,7 @@ ${system.openQuestions}
 
 ## Change Log
 ${changeLogList}
+${system.content ? `\n## Content\n\n${system.content}` : ''}
+${system.systemDetails?.length ? `\n## System details\n\n${renderSystemDetailsSection(system.systemDetails)}` : ''}
 `
 }

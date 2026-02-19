@@ -55,6 +55,21 @@ export const createVersionPlanSchema = z.object({
   status: versionPlanStatusEnum.optional().default('draft'),
 })
 
+const detailTypeEnum = z.enum(['mechanic', 'input', 'output', 'content', 'ui_hint'])
+
+export const createSystemDetailSchema = z.object({
+  gameSystemId: z.string().min(1),
+  name: z.string().min(1, 'Name is required'),
+  detailType: detailTypeEnum.default('mechanic'),
+  spec: z.string().default(''),
+})
+
+export const updateSystemDetailSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  detailType: detailTypeEnum.default('mechanic'),
+  spec: z.string().default(''),
+})
+
 export const createDependencyEdgeSchema = z
   .object({
     sourceSystemId: z.string().min(1),
@@ -109,3 +124,5 @@ export type CreateGameSystemInput = z.infer<typeof createGameSystemSchema>
 export type CreateBrainstormSessionInput = z.infer<typeof createBrainstormSessionSchema>
 export type CreateVersionPlanInput = z.infer<typeof createVersionPlanSchema>
 export type CreateDependencyEdgeInput = z.infer<typeof createDependencyEdgeSchema>
+export type CreateSystemDetailInput = z.infer<typeof createSystemDetailSchema>
+export type UpdateSystemDetailInput = z.infer<typeof updateSystemDetailSchema>

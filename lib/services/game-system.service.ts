@@ -1,4 +1,4 @@
-import type { GameSystem } from '@prisma/client'
+import type { GameSystem, SystemDetail } from '@prisma/client'
 import type { ServiceResult } from './types'
 import type { PaginatedResult, PaginationParams } from '../repositories/types'
 import type {
@@ -20,8 +20,10 @@ import {
   listChangeLogs,
 } from '../repositories/game-system.repository'
 import { findProjectById } from '../repositories/project.repository'
+import { createManySystemDetails } from '../repositories/system-detail.repository'
 import { parseSystemMarkdown, renderSystemMarkdown } from '../parsers/system-parser'
 import type { GameSystemData } from '../parsers/system-parser.types'
+import { deriveSectionsFromSystemDetails } from './system-detail-roll-up.service'
 
 export async function createSystem(
   input: CreateGameSystemInput
@@ -128,39 +130,55 @@ export async function deleteSystem(id: string): Promise<ServiceResult<void>> {
   }
 }
 
-export function systemToData(system: GameSystem): GameSystemData {
+export function systemToData(
+  system: GameSystem,
+  systemDetails?: SystemDetail[]
+): GameSystemData {
   const changeLog = system.markdownContent
     ? (() => {
         const parsed = parseSystemMarkdown(system.markdownContent!)
         return parsed.ok ? parsed.data.changeLog : []
       })()
     : []
+  const derived = systemDetails?.length
+    ? deriveSectionsFromSystemDetails(systemDetails)
+    : null
   return {
     name: system.name,
     systemSlug: system.systemSlug,
     version: system.version,
     status: system.status,
-    purpose: system.purpose ?? '',
+    purpose: derived ? derived.purpose : (system.purpose ?? ''),
     currentState: system.currentState ?? '',
     targetState: system.targetState ?? '',
-    coreMechanics: system.coreMechanics ?? '',
-    inputs: system.inputs ?? '',
-    outputs: system.outputs ?? '',
+    coreMechanics: derived ? derived.coreMechanics : (system.coreMechanics ?? ''),
+    inputs: derived ? derived.inputs : (system.inputs ?? ''),
+    outputs: derived ? derived.outputs : (system.outputs ?? ''),
     dependencies: [],
     dependedOnBy: [],
     failureStates: system.failureStates ?? '',
     scalingBehavior: system.scalingBehavior ?? '',
     mvpCriticality: system.mvpCriticality,
-    implementationNotes: system.implementationNotes ?? '',
+    implementationNotes: derived ? derived.implementationNotes : (system.implementationNotes ?? ''),
     openQuestions: system.openQuestions ?? '',
     changeLog,
+    ...(derived?.content ? { content: derived.content } : {}),
+    ...(systemDetails?.length
+      ? {
+          systemDetails: systemDetails.map((b) => ({
+            name: b.name,
+            detailType: b.detailType,
+            spec: b.spec,
+          })),
+        }
+      : {}),
   }
 }
 
 export async function renderSystemMarkdownForId(id: string): Promise<ServiceResult<string>> {
-  const system = await findGameSystemById(id)
+  const system = await getGameSystemFull(id).catch(() => null)
   if (!system) return { success: false, error: 'System not found', code: 'NOT_FOUND' }
-  const data = systemToData(system)
+  const data = systemToData(system, system.systemDetails)
   return { success: true, data: renderSystemMarkdown(data) }
 }
 
@@ -195,7 +213,19 @@ export async function importSystemFromMarkdown(
     openQuestions: data.openQuestions || undefined,
     markdownContent: rendered,
   }
-  return createSystem(input)
+  const result = await createSystem(input)
+  if (result.success && result.data && data.systemDetails?.length) {
+    await createManySystemDetails(
+      data.systemDetails.map((b, i) => ({
+        gameSystemId: result.data!.id,
+        name: b.name,
+        detailType: b.detailType,
+        spec: b.spec,
+        sortOrder: i,
+      }))
+    )
+  }
+  return result
 }
 
 export async function getChangeLogs(systemId: string) {

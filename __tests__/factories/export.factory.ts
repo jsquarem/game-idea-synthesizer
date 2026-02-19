@@ -11,6 +11,8 @@ export function buildExport(overrides: Partial<Export> = {}): Export {
     format: 'markdown',
     content: '# Game Design Document\n\nContent here.',
     metadata: null,
+    synthesizedOutputId: null,
+    markedUpToDateAt: null,
     createdAt: new Date(),
     ...overrides,
   }

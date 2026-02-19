@@ -1,6 +1,15 @@
 import { prisma } from '@/lib/db'
-import type { GameSystem, ChangeLog, Dependency } from '@prisma/client'
+import type { GameSystem, ChangeLog, Dependency, Prisma } from '@prisma/client'
 import type { PaginatedResult, PaginationParams } from './types'
+
+export type GameSystemWithRelations = Prisma.GameSystemGetPayload<{
+  include: {
+    dependsOn: { include: { targetSystem: true } }
+    dependedOnBy: { include: { sourceSystem: true } }
+    changeLogs: true
+    systemDetails: { orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] }
+  }
+}>
 
 export type CreateGameSystemInput = {
   projectId: string
@@ -32,12 +41,6 @@ export type GameSystemFilter = {
   status?: string
   mvpCriticality?: string
   search?: string
-}
-
-export type GameSystemWithRelations = GameSystem & {
-  dependsOn: (Dependency & { targetSystem: GameSystem })[]
-  dependedOnBy: (Dependency & { sourceSystem: GameSystem })[]
-  changeLogs: ChangeLog[]
 }
 
 const DEFAULT_PAGE_SIZE = 20
@@ -114,6 +117,38 @@ export async function getAllGameSystems(projectId: string): Promise<GameSystem[]
   })
 }
 
+export type ProjectSystemForReview = {
+  systemSlug: string
+  systemDetails: { name: string; detailType: string }[]
+}
+
+export async function getAllGameSystemsWithDetails(
+  projectId: string
+): Promise<ProjectSystemForReview[]> {
+  const systems = await prisma.gameSystem.findMany({
+    where: { projectId },
+    orderBy: { name: 'asc' },
+    select: { id: true, systemSlug: true },
+  })
+  if (systems.length === 0) return []
+  const systemIds = systems.map((s) => s.id)
+  const details = await prisma.systemDetail.findMany({
+    where: { gameSystemId: { in: systemIds } },
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    select: { gameSystemId: true, name: true, detailType: true },
+  })
+  const detailsBySystemId = new Map<string, { name: string; detailType: string }[]>()
+  for (const d of details) {
+    const list = detailsBySystemId.get(d.gameSystemId) ?? []
+    list.push({ name: d.name, detailType: d.detailType })
+    detailsBySystemId.set(d.gameSystemId, list)
+  }
+  return systems.map((s) => ({
+    systemSlug: s.systemSlug,
+    systemDetails: detailsBySystemId.get(s.id) ?? [],
+  }))
+}
+
 export async function updateGameSystem(
   id: string,
   data: UpdateGameSystemInput
@@ -132,6 +167,7 @@ export async function getGameSystemFull(id: string): Promise<GameSystemWithRelat
       dependsOn: { include: { targetSystem: true } },
       dependedOnBy: { include: { sourceSystem: true } },
       changeLogs: true,
+      systemDetails: { orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] },
     },
   })
 }

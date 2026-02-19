@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/status-badge'
 import { CriticalityBadge } from '@/components/criticality-badge'
 import { Button } from '@/components/ui/button'
 import { DependencySidePanel } from '@/components/dependency-side-panel'
+import { SystemDetails } from './system-details'
 
 export default async function SystemDetailPage({
   params,
@@ -78,7 +79,7 @@ export default async function SystemDetailPage({
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,360px)]">
-        <div className="min-w-0">
+        <div className="min-w-0 space-y-6">
           <SystemViewToggle
             system={system}
             projectId={projectId}
@@ -92,6 +93,11 @@ export default async function SystemDetailPage({
                 updateAction={updateSystemAction}
               />
             }
+          />
+          <SystemDetails
+            projectId={projectId}
+            systemId={systemId}
+            systemDetails={system.systemDetails}
           />
         </div>
         <aside className="lg:order-none">
