@@ -2,6 +2,16 @@ import Link from 'next/link'
 import { createBrainstormAction } from '@/app/actions/brainstorm.actions'
 import { BrainstormNewForm } from './brainstorm-new-form'
 
+function defaultBrainstormTitle(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  const h = String(d.getHours()).padStart(2, '0')
+  const min = String(d.getMinutes()).padStart(2, '0')
+  return `Brainstorm - ${y}-${m}-${day} ${h}:${min}`
+}
+
 export default async function NewBrainstormPage({
   params,
   searchParams,
@@ -11,6 +21,7 @@ export default async function NewBrainstormPage({
 }) {
   const { projectId } = await params
   const { error } = await searchParams
+  const defaultTitle = defaultBrainstormTitle()
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -28,7 +39,11 @@ export default async function NewBrainstormPage({
           {decodeURIComponent(error)}
         </p>
       )}
-      <BrainstormNewForm projectId={projectId} createAction={createBrainstormAction} />
+      <BrainstormNewForm
+        projectId={projectId}
+        defaultTitle={defaultTitle}
+        createAction={createBrainstormAction}
+      />
     </div>
   )
 }

@@ -16,6 +16,9 @@ export type SynthesisRunInput = {
   model?: string
   focusAreas?: string
   rerunMode?: 'rerun' | 'update_context'
+  title?: string
+  /** When provided, used as the saved rawInput for this synthesis (e.g. from client so it matches what the user saw). */
+  rawInput?: string
 }
 
 export type SynthesisStreamResult = {
@@ -121,8 +124,10 @@ export async function runSynthesisStream(
   const output = await createSynthesizedOutput({
     projectId: session.projectId,
     brainstormSessionId: input.brainstormSessionId,
-    title: session.title,
+    title: input.title?.trim() || session.title,
     content: fullContent,
+    rawInput: input.rawInput ?? session.content,
+    fullPrompt,
     extractedSystems: parsed.extractedSystems,
     extractedSystemDetails: parsed.extractedSystemDetails,
     suggestedSystems: parsed.suggestedSystems?.length ? parsed.suggestedSystems : undefined,

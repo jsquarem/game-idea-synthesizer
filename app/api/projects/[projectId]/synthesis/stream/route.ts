@@ -9,7 +9,7 @@ export async function POST(
   { params }: { params: Promise<{ projectId: string }> }
 ) {
   const { projectId: routeProjectId } = await params
-  let body: { sessionId?: string; providerId?: string; model?: string; rerunMode?: string }
+  let body: { sessionId?: string; providerId?: string; model?: string; rerunMode?: string; title?: string; rawInput?: string }
   try {
     body = await request.json()
   } catch {
@@ -44,6 +44,8 @@ export async function POST(
             model: body.model,
             rerunMode:
               body.rerunMode === 'update_context' ? 'update_context' : 'rerun',
+            title: body.title,
+            rawInput: body.rawInput,
           },
           (text) => send('chunk', { text }),
           (prompt) => send('prompt', { prompt })

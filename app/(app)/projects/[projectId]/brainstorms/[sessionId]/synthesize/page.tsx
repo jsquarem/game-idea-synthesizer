@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { getSynthesisConfig } from '@/app/actions/synthesis.actions'
 import { getBrainstormById } from '@/lib/repositories/brainstorm.repository'
 import { getAllGameSystemsWithDetails } from '@/lib/repositories/game-system.repository'
-import { findSynthesizedOutputById } from '@/lib/repositories/synthesized-output.repository'
+import { findSynthesizedOutputById, listOutputsByBrainstorm } from '@/lib/repositories/synthesized-output.repository'
 import { SynthesizeWizard } from './synthesize-wizard'
 
 export default async function SynthesizePage({
@@ -18,11 +18,13 @@ export default async function SynthesizePage({
   const configResult = await getSynthesisConfig(projectId, sessionId)
   if ('error' in configResult) notFound()
 
-  const [session, existingProjectSystems] = await Promise.all([
+  const [session, existingProjectSystems, synthesisListRaw] = await Promise.all([
     getBrainstormById(sessionId),
     getAllGameSystemsWithDetails(projectId),
+    listOutputsByBrainstorm(sessionId),
   ])
-  const sourcePreview = session.content.slice(0, 800)
+  const sourceContent = session.content
+  const synthesisList = synthesisListRaw.map((o) => ({ id: o.id, title: o.title, status: o.status }))
 
   let existingOutput: {
     extractedSystems: { name?: string; systemSlug?: string; purpose?: string; [key: string]: unknown }[]
@@ -30,6 +32,7 @@ export default async function SynthesizePage({
     suggestedSystems?: { name?: string; systemSlug?: string; purpose?: string; [key: string]: unknown }[]
     suggestedSystemDetails?: { name?: string; detailType?: string; spec?: string; targetSystemSlug?: string; systemSlug?: string; [key: string]: unknown }[]
     content: string
+    fullPrompt?: string
   } | null = null
   let existingOutputId: string | null = null
 
@@ -42,6 +45,8 @@ export default async function SynthesizePage({
         suggestedSystems?: string | null
         suggestedSystemDetails?: string | null
         content: string
+        rawInput?: string | null
+        fullPrompt?: string | null
         id: string
       }
       existingOutputId = output.id
@@ -51,6 +56,7 @@ export default async function SynthesizePage({
         suggestedSystems: JSON.parse(raw.suggestedSystems || '[]') as { name?: string; systemSlug?: string; purpose?: string; [key: string]: unknown }[],
         suggestedSystemDetails: JSON.parse(raw.suggestedSystemDetails || '[]') as { name?: string; detailType?: string; spec?: string; targetSystemSlug?: string; systemSlug?: string; [key: string]: unknown }[],
         content: raw.content,
+        fullPrompt: raw.fullPrompt ?? undefined,
       }
     }
   }
@@ -60,17 +66,19 @@ export default async function SynthesizePage({
       <h1 className="shrink-0 text-2xl font-bold">Synthesize</h1>
       <div className="min-h-0 flex-1 flex flex-col">
         <SynthesizeWizard
+        key={existingOutputId ?? 'new'}
         initialConfig={{
           projectId: configResult.projectId,
           sessionId: configResult.sessionId,
           sessionTitle: configResult.sessionTitle,
           snapshotDate: configResult.snapshotDate,
           providerConfigs: configResult.providerConfigs,
-          sourcePreview,
+          sourceContent,
         }}
         existingOutputId={existingOutputId}
         existingOutput={existingOutput}
         existingProjectSystems={existingProjectSystems}
+        synthesisList={synthesisList}
       />
       </div>
     </div>

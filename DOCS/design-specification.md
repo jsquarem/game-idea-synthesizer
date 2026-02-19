@@ -31,7 +31,7 @@
 /projects/:projectId/overview       → Project Overview dashboard
 /projects/:projectId/brainstorms    → Brainstorm Sessions list
 /projects/:projectId/brainstorms/new           → New Brainstorm entry
-/projects/:projectId/brainstorms/:sessionId    → View Brainstorm session
+/projects/:projectId/brainstorms/:sessionId    → Redirect to synthesize flow
 /projects/:projectId/brainstorms/:sessionId/synthesize → Synthesize flow
 
 /projects/:projectId/idea-stream    → Idea Stream (threads + messages, finalize → brainstorm)
@@ -132,31 +132,24 @@ Activity page (`/projects/:projectId/activity`): Full project activity history (
 
 | Element          | Description                                           |
 |------------------|-------------------------------------------------------|
-| Session cards    | Title, date, author, tag pills, word count, synthesized status |
+| Session cards    | Title, date, author, tag pills; click → synthesize flow (Configure step). Delete per card. |
 | New session CTA  | Button → `/brainstorms/new`                           |
 | Filter/sort      | By date, by tag, synthesized vs raw                   |
 | Empty state      | "Paste your first brainstorm to get started"          |
 
 ### 1.3.6 New Brainstorm (`/projects/:projectId/brainstorms/new`)
 
-| Element             | Description                                                        |
-|---------------------|--------------------------------------------------------------------|
-| Input mode tabs     | **Paste** / **Freeform** / **Upload**                              |
-| Paste mode          | Large textarea, auto-detect Discord formatting                     |
-| Freeform mode       | Markdown editor with toolbar                                       |
-| Upload mode         | Drag-and-drop zone for `.md` / `.txt` files                       |
-| Metadata fields     | Author (text), Tags (tag input with autocomplete)                  |
-| Save action         | Server Action → redirect to session view                           |
-| Save & Synthesize   | Server Action → save then redirect to synthesize flow              |
+| Element           | Description                                                                 |
+|-------------------|-----------------------------------------------------------------------------|
+| Title             | Required; defaults to "Brainstorm - &lt;YYYY-MM-DD HH:mm&gt;"               |
+| Content           | Required; single large textarea (paste or type). Other input modes may be added later. |
+| Author            | Set automatically from the current user (no field).                         |
+| Tags              | Optional tag input with add/remove                                          |
+| Save action       | Server Action → save then redirect to synthesize flow (Configure step)     |
 
-### 1.3.7 View Brainstorm (`/projects/:projectId/brainstorms/:sessionId`)
+### 1.3.7 Brainstorm session URL (`/projects/:projectId/brainstorms/:sessionId`)
 
-| Element                | Description                                                  |
-|------------------------|--------------------------------------------------------------|
-| Session header         | Title, author, date, tags                                    |
-| Content display        | Rendered markdown (read-only)                                |
-| Action bar             | "Synthesize", "Edit Tags", "Delete"                          |
-| Synthesized outputs    | If synthesized: linked card(s) to synthesized output         |
+This route redirects to the synthesize flow (`.../synthesize`). There is no standalone session preview page; list and post-create go directly to synthesize.
 
 ### 1.3.8 Synthesize Flow (`/projects/:projectId/brainstorms/:sessionId/synthesize`)
 
@@ -164,9 +157,9 @@ This is a **multi-step wizard**:
 
 | Step | Name          | Description                                                                                                                                 |
 |------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------|
-| 1    | Configure     | Select AI model, set focus areas (optional), confirm source text                                                                           |
-| 2    | Processing    | Loading state with streaming AI response preview                                                                                           |
-| 3    | Review        | Refine form, then Finalize (Get AI suggestion, Create selected), then extracted systems as independently expandable list items (left expand handle, Added/Excluded button per system). |
+| 1    | Configure     | Select AI model, set focus areas (optional), confirm source text. **Right column:** list of syntheses for this brainstorm (Load, Rename, Delete). |
+| 2    | Processing    | Loading state with streaming AI response preview. **Right column:** markdown preview.                                                        |
+| 3    | Review        | Refine form, then Finalize (Get AI suggestion, Create selected), then extracted systems as independently expandable list items (left expand handle, Added/Excluded button per system). **Right column:** markdown preview. |
 
 **Lightweight UX:** Default configs and pre-populated values so the user can often "review and go"; minimal required input in Configure.
 
@@ -1390,5 +1383,8 @@ All persistent data (projects, systems, brainstorms, plans, prompts) lives serve
 - 2026-02-18: §4.3 Add all/Exclude all aligned right with same margin; system details use Include/Exclude buttons (not checkboxes); New/Existing badges use light coloring.
 - 2026-02-19: §1.3.13 Dependency Graph: edge labels, selection panel skeleton when no selection, Interaction links definition-style list, Add link form with optional description; remove Suggested build order (see edge-labels-and-visible-connections plan).
 - 2026-02-19: §1.3.13: Graph layout rebuilt with elkjs (labeled flowchart); synthesis flow now populates dependency descriptions; Interaction links list shows "— No description" when empty.
+- 2026-02-19: §1.3.6 New Brainstorm: author from current user; default title "Brainstorm - &lt;datetime&gt;"; input mode tabs removed (manual/paste only for now).
 - 2026-02-19: §1.3.13: Dependency edges specified as right-angle (orthogonal) connectors with directional arrows and multiline-wrapped labels.
 - 2026-02-19: §1.3.13: Layout options updated to Organized (group + fewer crossings) with Top–down / Left–right.
+- 2026-02-19: Brainstorm preview removed: §1.3.5–1.3.8 updated; session cards and post-create go to synthesize; /brainstorms/:sessionId redirects to synthesize; Configure step shows synthesis list (load, rename, delete); Processing/Review show markdown preview.
+- 2026-02-19: Synthesize: Load opens Processing step; Configure adds optional name (dynamic default) and date/time display.

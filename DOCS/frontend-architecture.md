@@ -60,7 +60,7 @@ app/
 │   │       │   ├── new/
 │   │       │   │   └── page.tsx       # New brainstorm session (Server + Server Action)
 │   │       │   └── [sessionId]/
-│   │       │       ├── page.tsx       # View brainstorm session (Server)
+│   │       │       ├── page.tsx       # Redirect to synthesize (Server)
 │   │       │       ├── not-found.tsx  # Session 404
 │   │       │       └── synthesize/
 │   │       │           └── page.tsx   # Synthesis review page (Server + Client island)
@@ -121,8 +121,8 @@ app/
 | `(app)/projects/new/page.tsx` | **Server** with Server Action | Progressive form, no client JS needed |
 | `(app)/projects/[projectId]/overview/page.tsx` | **Server** | Read-only project overview |
 | `(app)/projects/[projectId]/brainstorms/page.tsx` | **Server** | List page |
-| `(app)/projects/[projectId]/brainstorms/new/page.tsx` | **Server** with Server Action | Textarea paste form |
-| `(app)/projects/[projectId]/brainstorms/[sessionId]/page.tsx` | **Server** | Read-only view |
+| `(app)/projects/[projectId]/brainstorms/new/page.tsx` | **Server** with Server Action | New brainstorm form: title (default "Brainstorm - datetime"), content, tags; author from current user |
+| `(app)/projects/[projectId]/brainstorms/[sessionId]/page.tsx` | **Server** | Redirect to synthesize |
 | `(app)/projects/[projectId]/brainstorms/[sessionId]/synthesize/page.tsx` | **Server** shell + **Client** island | AI streaming response requires client interactivity |
 | `(app)/projects/[projectId]/systems/page.tsx` | **Server** | List + filter via URL params |
 | `(app)/projects/[projectId]/systems/new/page.tsx` | **Server** with Server Action | Structured form |
@@ -2098,3 +2098,6 @@ game-idea-synthesizer/
 - 2026-02-19: §6.2: Orthogonal (right-angle) flowchart edges; temporary high-visibility edge/arrow styling; multiline wrapped labels; grid background. Custom edge uses getSmoothStepPath(borderRadius: 0).
 - 2026-02-19: §6.2: Readability logic — pre-layout organization, ELK crossing minimization and spacing, edge path offset, zoom-dependent labels, default layout mode "Organized".
 - 2026-02-19: §6.2 layout bake-off added in `lib/graph/transform.ts`: candidate ELK and Graphviz layouts are scored by readability (aspect ratio, crossing proxy, edge span) and the winner is rendered; `NEXT_PUBLIC_GRAPH_LAYOUT_STRATEGY` allows local override.
+- 2026-02-19: Brainstorm preview removed: brainstorms/[sessionId]/page redirects to synthesize; list and post-create go directly to synthesize; wizard back link goes to brainstorms list; Configure step shows synthesis list (load, rename, delete); Processing/Review show markdown preview.
+- 2026-02-19: Synthesize wizard keyed by output id so Load opens Processing; Configure step adds synthesis name (optional, default) and date/time.
+- 2026-02-19: New brainstorm page: author from current user; default title "Brainstorm - datetime"; input mode UI removed; form has title, content, tags only.

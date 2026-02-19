@@ -18,5 +18,9 @@ export async function GET(
   if (!output || output.projectId !== routeProjectId) {
     return NextResponse.json({ error: 'Output not found' }, { status: 404 })
   }
-  return NextResponse.json({ content: output.content })
+  return NextResponse.json({
+    content: output.content,
+    fullPrompt: (output as { fullPrompt?: string | null }).fullPrompt ?? undefined,
+    rawInput: (output as { rawInput?: string | null }).rawInput ?? undefined,
+  })
 }

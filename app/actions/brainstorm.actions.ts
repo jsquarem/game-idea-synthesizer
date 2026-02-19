@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createBrainstormSessionSchema } from '@/lib/validations/schemas'
 import * as brainstormService from '@/lib/services/brainstorm.service'
+import { getCurrentUserId } from '@/lib/get-current-user'
+import { findUserById } from '@/lib/repositories/user.repository'
 
 export async function createBrainstormAction(
   projectId: string,
@@ -12,9 +14,12 @@ export async function createBrainstormAction(
   const title = (formData.get('title') as string) || 'Untitled'
   const content = (formData.get('content') as string) ?? ''
   const source = (formData.get('source') as string) || 'manual'
-  const author = (formData.get('author') as string) ?? ''
   const tagsRaw = formData.get('tags') as string | null
   const tags = tagsRaw ? (JSON.parse(tagsRaw) as string[]) : undefined
+
+  const userId = await getCurrentUserId()
+  const user = await findUserById(userId)
+  const author = user?.displayName?.trim() || 'Unknown'
 
   const parsed = createBrainstormSessionSchema.safeParse({
     projectId,
@@ -44,7 +49,7 @@ export async function createBrainstormAction(
     )
   revalidatePath(`/projects/${projectId}/brainstorms`)
   revalidatePath(`/projects/${projectId}/overview`)
-  redirect(`/projects/${projectId}/brainstorms/${result.data.id}`)
+  redirect(`/projects/${projectId}/brainstorms/${result.data.id}/synthesize`)
 }
 
 export async function deleteBrainstormAction(
@@ -54,7 +59,7 @@ export async function deleteBrainstormAction(
   const result = await brainstormService.deleteBrainstorm(brainstormId)
   if (!result.success)
     redirect(
-      `/projects/${projectId}/brainstorms/${brainstormId}?error=${encodeURIComponent(result.error)}`
+      `/projects/${projectId}/brainstorms?error=${encodeURIComponent(result.error)}`
     )
   revalidatePath(`/projects/${projectId}/brainstorms`)
   revalidatePath(`/projects/${projectId}/overview`)
