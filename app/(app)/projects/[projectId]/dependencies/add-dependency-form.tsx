@@ -51,7 +51,7 @@ export function AddDependencyForm({ projectId, systems }: Props) {
     <form onSubmit={submit} className="flex flex-wrap items-end gap-4">
       <div className="grid flex-1 gap-2 min-w-[180px]">
         <label htmlFor="source" className="text-sm font-medium">
-          Source (depends on)
+          Source (uses / interfaces with)
         </label>
         <select
           id="source"
@@ -69,7 +69,7 @@ export function AddDependencyForm({ projectId, systems }: Props) {
       </div>
       <div className="grid flex-1 gap-2 min-w-[180px]">
         <label htmlFor="target" className="text-sm font-medium">
-          Target (depended on)
+          Target (used by / interfaced with)
         </label>
         <select
           id="target"
@@ -86,7 +86,7 @@ export function AddDependencyForm({ projectId, systems }: Props) {
         </select>
       </div>
       <Button type="submit" disabled={pending}>
-        {pending ? 'Adding…' : 'Add dependency'}
+        {pending ? 'Adding…' : 'Add interaction link'}
       </Button>
       {error && <p className="w-full text-sm text-destructive">{error}</p>}
     </form>

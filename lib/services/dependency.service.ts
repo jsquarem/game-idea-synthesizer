@@ -7,7 +7,7 @@ import {
 } from '../repositories/dependency.repository'
 import { getAllGameSystems } from '../repositories/game-system.repository'
 import { findGameSystemById } from '../repositories/game-system.repository'
-import { buildGraph, wouldCreateCycle, topologicalSort, getTransitiveDownstream } from '../graph/graph-engine'
+import { buildGraph, topologicalSort, getTransitiveDownstream, detectCycles } from '../graph/graph-engine'
 import type { GraphNode, GraphEdge } from '../graph/types'
 
 export async function getProjectGraph(projectId: string): Promise<
@@ -15,6 +15,7 @@ export async function getProjectGraph(projectId: string): Promise<
     nodes: GraphNode[]
     edges: GraphEdge[]
     implementationOrder: string[]
+    hasCycles: boolean
   }>
 > {
   try {
@@ -34,12 +35,14 @@ export async function getProjectGraph(projectId: string): Promise<
     }))
     const graph = buildGraph(nodes, edges)
     const order = topologicalSort(graph)
+    const cycles = detectCycles(graph)
     return {
       success: true,
       data: {
         nodes,
         edges,
         implementationOrder: order ?? [],
+        hasCycles: cycles.length > 0,
       },
     }
   } catch (e) {
@@ -54,7 +57,8 @@ export async function getProjectGraph(projectId: string): Promise<
 export async function addDependency(
   sourceSystemId: string,
   targetSystemId: string,
-  dependencyType?: string
+  dependencyType?: string,
+  description?: string | null
 ): Promise<ServiceResult<Dependency>> {
   if (sourceSystemId === targetSystemId) {
     return { success: false, error: 'System cannot depend on itself', code: 'VALIDATION' }
@@ -68,23 +72,12 @@ export async function addDependency(
   if (source.projectId !== target.projectId) {
     return { success: false, error: 'Systems must belong to the same project', code: 'VALIDATION' }
   }
-  const systems = await getAllGameSystems(source.projectId)
-  const deps = await listDependenciesByProject(source.projectId)
-  const nodes: GraphNode[] = systems.map((s) => ({ id: s.id, label: s.name, metadata: {} }))
-  const edges: GraphEdge[] = deps.map((d) => ({
-    source: d.sourceSystemId,
-    target: d.targetSystemId,
-    type: d.dependencyType,
-  }))
-  const graph = buildGraph(nodes, edges)
-  if (wouldCreateCycle(graph, sourceSystemId, targetSystemId)) {
-    return { success: false, error: 'This dependency would create a cycle', code: 'CYCLE_DETECTED' }
-  }
   try {
     const dep = await createDependency({
       sourceSystemId,
       targetSystemId,
       dependencyType: dependencyType ?? 'requires',
+      description: description ?? undefined,
     })
     return { success: true, data: dep }
   } catch (e) {

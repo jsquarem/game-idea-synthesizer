@@ -14,6 +14,8 @@ export function buildSynthesizedOutput(
     content: '## Extracted Systems\n\n### Combat\n- Slug: combat',
     extractedSystems: JSON.stringify([{ name: 'Combat', systemSlug: 'combat' }]),
     extractedSystemDetails: null,
+    suggestedSystems: null,
+    suggestedSystemDetails: null,
     status: 'pending',
     aiProvider: null,
     aiModel: null,

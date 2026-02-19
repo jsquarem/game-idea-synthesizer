@@ -37,6 +37,8 @@ export type RefineResult = {
   success: true
   extractedSystems: ExtractedSystemStub[]
   extractedSystemDetails: ExtractedSystemDetailStub[]
+  suggestedSystems?: ExtractedSystemStub[]
+  suggestedSystemDetails?: ExtractedSystemDetailStub[]
   rawContent: string
 } | {
   success: false
@@ -190,6 +192,8 @@ Respond with only the updated JSON object (extractedSystems and extractedSystemD
   await updateSynthesizedOutput(input.outputId, {
     extractedSystems: parsed.extractedSystems,
     extractedSystemDetails: parsed.extractedSystemDetails,
+    suggestedSystems: parsed.suggestedSystems ?? [],
+    suggestedSystemDetails: parsed.suggestedSystemDetails ?? [],
   })
 
   await appendMessage({
@@ -207,6 +211,8 @@ Respond with only the updated JSON object (extractedSystems and extractedSystemD
     success: true,
     extractedSystems: parsed.extractedSystems,
     extractedSystemDetails: parsed.extractedSystemDetails,
+    suggestedSystems: parsed.suggestedSystems ?? [],
+    suggestedSystemDetails: parsed.suggestedSystemDetails ?? [],
     rawContent: completion.content,
   }
 }

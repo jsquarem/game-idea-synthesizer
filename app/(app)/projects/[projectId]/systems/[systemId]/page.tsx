@@ -1,6 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getSystem } from '@/lib/services/game-system.service'
+import { findProjectById } from '@/lib/repositories/project.repository'
+import { listWorkspaceAiConfigs } from '@/lib/repositories/workspace-ai-config.repository'
+import { parseAvailableModels } from '@/lib/ai/list-models'
 import { updateSystemAction, deleteSystemAction } from '@/app/actions/game-system.actions'
 import { SystemForm } from './system-form'
 import { SystemViewToggle } from './system-view-toggle'
@@ -10,6 +13,7 @@ import { CriticalityBadge } from '@/components/criticality-badge'
 import { Button } from '@/components/ui/button'
 import { DependencySidePanel } from '@/components/dependency-side-panel'
 import { SystemDetails } from './system-details'
+import { SystemEvolveChat } from '@/components/system-evolve-chat'
 
 export default async function SystemDetailPage({
   params,
@@ -20,9 +24,22 @@ export default async function SystemDetailPage({
 }) {
   const { projectId, systemId } = await params
   const { error } = await searchParams
-  const result = await getSystem(systemId)
-  if (!result.success) notFound()
+  const [result, project] = await Promise.all([
+    getSystem(systemId),
+    findProjectById(projectId),
+  ])
+  if (!result.success || !project) notFound()
   const system = result.data
+  const workspaceId = project.workspaceId
+  const aiConfigs = workspaceId ? await listWorkspaceAiConfigs(workspaceId) : []
+  const providerConfigs =
+    aiConfigs.length > 0
+      ? aiConfigs.map((c) => ({
+          providerId: c.providerId,
+          defaultModel: c.defaultModel ?? 'gpt-4o-mini',
+          availableModels: parseAvailableModels(c.availableModels),
+        }))
+      : [{ providerId: 'openai', defaultModel: 'gpt-4o-mini', availableModels: [] }]
 
   const dependencyPanelSystem = {
     id: system.id,
@@ -61,9 +78,6 @@ export default async function SystemDetailPage({
           <Button variant="secondary" size="sm" asChild>
             <Link href={`/projects/${projectId}/systems/${systemId}/history`}>History</Link>
           </Button>
-          <Button variant="secondary" size="sm" disabled>
-            Evolve
-          </Button>
           <DeleteSystemButton
             projectId={projectId}
             systemId={systemId}
@@ -98,6 +112,11 @@ export default async function SystemDetailPage({
             projectId={projectId}
             systemId={systemId}
             systemDetails={system.systemDetails}
+          />
+          <SystemEvolveChat
+            projectId={projectId}
+            systemId={systemId}
+            providerConfigs={providerConfigs}
           />
         </div>
         <aside className="lg:order-none">

@@ -53,12 +53,21 @@ export async function POST(
         } else if (result.output) {
           const systems = JSON.parse(result.output.extractedSystems || '[]') as unknown[]
           const systemDetails = JSON.parse(result.output.extractedSystemDetails || '[]') as unknown[]
+          const suggestedSystems = JSON.parse(
+            (result.output as { suggestedSystems?: string | null }).suggestedSystems || '[]'
+          ) as unknown[]
+          const suggestedSystemDetails = JSON.parse(
+            (result.output as { suggestedSystemDetails?: string | null }).suggestedSystemDetails ||
+              '[]'
+          ) as unknown[]
           send('done', {
             outputId: result.output.id,
             promptTokens: result.output.promptTokens,
             completionTokens: result.output.completionTokens,
             extractedSystems: systems,
             extractedSystemDetails: systemDetails,
+            suggestedSystems,
+            suggestedSystemDetails,
             prompt: result.fullPrompt ?? undefined,
             rawContent: result.output.content,
           })

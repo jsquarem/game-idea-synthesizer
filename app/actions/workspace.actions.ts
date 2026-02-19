@@ -13,7 +13,7 @@ export async function addWorkspaceMemberAction(
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
   const currentUserId = await getCurrentUserId()
-  const workspace = await getOrCreateDefaultWorkspace()
+  const workspace = await getOrCreateDefaultWorkspace(currentUserId)
   if (workspace.id !== workspaceId) {
     return { success: false, error: 'Workspace not found' }
   }

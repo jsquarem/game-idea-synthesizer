@@ -25,6 +25,22 @@ export type UpsertWorkspaceAiConfigInput = {
   encryptedApiKey: string
   baseUrl?: string | null
   defaultModel?: string | null
+  availableModels?: string | null
+}
+
+export async function updateWorkspaceAiConfigAvailableModels(
+  workspaceId: string,
+  providerId: string,
+  availableModels: string | null
+): Promise<WorkspaceAiConfig | null> {
+  try {
+    return await prisma.workspaceAiConfig.update({
+      where: { workspaceId_providerId: { workspaceId, providerId } },
+      data: { availableModels, updatedAt: new Date() },
+    })
+  } catch {
+    return null
+  }
 }
 
 export async function upsertWorkspaceAiConfig(
@@ -43,11 +59,13 @@ export async function upsertWorkspaceAiConfig(
       encryptedApiKey: input.encryptedApiKey,
       baseUrl: input.baseUrl ?? null,
       defaultModel: input.defaultModel ?? null,
+      availableModels: input.availableModels ?? null,
     },
     update: {
       encryptedApiKey: input.encryptedApiKey,
       baseUrl: input.baseUrl ?? null,
       defaultModel: input.defaultModel ?? null,
+      availableModels: input.availableModels ?? null,
       updatedAt: new Date(),
     },
   })

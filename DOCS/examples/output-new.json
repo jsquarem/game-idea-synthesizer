@@ -1,0 +1,34 @@
+{
+  "extractedSystems": [
+    { "name": "Guild Management", "systemSlug": "guild-management", "purpose": "Manages the guild and strategic layer outside dungeons.", "dependencies": ["quest-selection"] },
+    { "name": "Quest Selection", "systemSlug": "quest-selection", "purpose": "Selects which dungeons or objectives the guild pursues; sends parties and objectives into combat.", "dependencies": ["combat-encounters"] },
+    { "name": "Reputation", "systemSlug": "reputation", "purpose": "Tracks guild reputation; influenced by combat and quest outcomes.", "dependencies": ["guild-management"] },
+    { "name": "Resource Production", "systemSlug": "resource-production", "purpose": "Produces incremental resources at the base.", "dependencies": ["hero-training-upgrades"] },
+    { "name": "Hero Training Upgrades", "systemSlug": "hero-training-upgrades", "purpose": "Improves heroes and behavior capacity; unlocks and upgrades roles and behavior trees.", "dependencies": ["behavior-trees", "roles"] },
+    { "name": "Player Intervention", "systemSlug": "player-intervention", "purpose": "Allows the player to take control of any character or input into combat.", "dependencies": ["combat-encounters", "heroes-units"] },
+    { "name": "Combat / Encounters", "systemSlug": "combat-encounters", "purpose": "Runs dungeon rooms and combat; hosts bosses, heroes, and encounter events.", "dependencies": ["reputation", "boss-encounter-mechanics", "ai-learning-unlockable-behavior", "heroes-units"] },
+    { "name": "Boss / Encounter Mechanics", "systemSlug": "boss-encounter-mechanics", "purpose": "Defines boss mechanics, telegraphs, phases, and environmental triggers.", "dependencies": ["combat-encounters"] },
+    { "name": "Heroes / Units", "systemSlug": "heroes-units", "purpose": "Entities with roles that operate via behavior trees; can be overridden by player.", "dependencies": ["roles", "behavior-trees"] },
+    { "name": "Roles", "systemSlug": "roles", "purpose": "Defines Tank, DPS, Healer etc.; provides behavior and stats for heroes.", "dependencies": ["combat-encounters"] },
+    { "name": "Behavior Trees", "systemSlug": "behavior-trees", "purpose": "Drives how heroes act in combat and overworld; expandable via AI learning.", "dependencies": ["combat-encounters"] },
+    { "name": "AI Learning / Unlockable Behavior", "systemSlug": "ai-learning-unlockable-behavior", "purpose": "Learns from encounter events and expands behavior tree nodes and logic.", "dependencies": ["behavior-trees"] }
+  ],
+  "extractedSystemDetails": [
+    { "name": "Guild strategic layer", "detailType": "mechanic", "spec": "Manages guild-level decisions and feeds into quest selection.", "targetSystemSlug": "guild-management" },
+    { "name": "Sends parties / objectives", "detailType": "output", "spec": "Sends selected parties and objectives into combat/encounters.", "targetSystemSlug": "quest-selection" },
+    { "name": "Outcomes affect reputation", "detailType": "mechanic", "spec": "Combat and quest outcomes feed into reputation growth.", "targetSystemSlug": "reputation" },
+    { "name": "Reputation influences management", "detailType": "mechanic", "spec": "Reputation feeds back into guild management options.", "targetSystemSlug": "reputation" },
+    { "name": "Incremental resources", "detailType": "mechanic", "spec": "Produces resources over time for hero training and upgrades.", "targetSystemSlug": "resource-production" },
+    { "name": "Upgrades capacity", "detailType": "mechanic", "spec": "Unlocks and upgrades behavior tree capacity and role options.", "targetSystemSlug": "hero-training-upgrades" },
+    { "name": "Override control", "detailType": "input", "spec": "Player can take control of any hero at any time.", "targetSystemSlug": "player-intervention" },
+    { "name": "Combat input", "detailType": "input", "spec": "Player can provide input into combat (e.g. tactical decisions).", "targetSystemSlug": "player-intervention" },
+    { "name": "Hosts encounters", "detailType": "mechanic", "spec": "Runs dungeon rooms and hosts bosses and heroes.", "targetSystemSlug": "combat-encounters" },
+    { "name": "Events to AI learning", "detailType": "output", "spec": "Sends encounter events (e.g. fire, phases) to AI learning.", "targetSystemSlug": "combat-encounters" },
+    { "name": "Telegraphs and triggers", "detailType": "mechanic", "spec": "Boss mechanics telegraph and trigger combat events.", "targetSystemSlug": "boss-encounter-mechanics" },
+    { "name": "Heroes use roles", "detailType": "mechanic", "spec": "Heroes use role definitions for behavior and stats.", "targetSystemSlug": "heroes-units" },
+    { "name": "Driven by behavior trees", "detailType": "mechanic", "spec": "Hero behavior is driven by behavior trees.", "targetSystemSlug": "heroes-units" },
+    { "name": "Role definitions", "detailType": "content", "spec": "Tank, DPS, Healer and other role definitions.", "targetSystemSlug": "roles" },
+    { "name": "Behavior tree execution", "detailType": "mechanic", "spec": "State machines and behavior trees drive autonomous behavior.", "targetSystemSlug": "behavior-trees" },
+    { "name": "Expands nodes / logic", "detailType": "mechanic", "spec": "AI learning expands behavior tree nodes and logic from encounter events.", "targetSystemSlug": "ai-learning-unlockable-behavior" }
+  ]
+}

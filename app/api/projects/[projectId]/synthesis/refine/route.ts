@@ -93,6 +93,8 @@ export async function POST(
   return NextResponse.json({
     extractedSystems: result.extractedSystems,
     extractedSystemDetails: result.extractedSystemDetails,
+    suggestedSystems: result.suggestedSystems ?? [],
+    suggestedSystemDetails: result.suggestedSystemDetails ?? [],
     rawContent: result.rawContent,
   })
 }

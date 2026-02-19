@@ -27,6 +27,8 @@ export default async function SynthesizePage({
   let existingOutput: {
     extractedSystems: { name?: string; systemSlug?: string; purpose?: string; [key: string]: unknown }[]
     extractedSystemDetails: { name?: string; detailType?: string; spec?: string; targetSystemSlug?: string; systemSlug?: string; [key: string]: unknown }[]
+    suggestedSystems?: { name?: string; systemSlug?: string; purpose?: string; [key: string]: unknown }[]
+    suggestedSystemDetails?: { name?: string; detailType?: string; spec?: string; targetSystemSlug?: string; systemSlug?: string; [key: string]: unknown }[]
     content: string
   } | null = null
   let existingOutputId: string | null = null
@@ -34,11 +36,20 @@ export default async function SynthesizePage({
   if (outputId) {
     const output = await findSynthesizedOutputById(outputId).catch(() => null)
     if (output && output.projectId === projectId) {
-      const raw = output as { extractedSystems: string; extractedSystemDetails?: string | null; content: string; id: string }
+      const raw = output as {
+        extractedSystems: string
+        extractedSystemDetails?: string | null
+        suggestedSystems?: string | null
+        suggestedSystemDetails?: string | null
+        content: string
+        id: string
+      }
       existingOutputId = output.id
       existingOutput = {
         extractedSystems: JSON.parse(raw.extractedSystems || '[]') as { name?: string; systemSlug?: string; purpose?: string; [key: string]: unknown }[],
         extractedSystemDetails: JSON.parse(raw.extractedSystemDetails || '[]') as { name?: string; detailType?: string; spec?: string; targetSystemSlug?: string; systemSlug?: string; [key: string]: unknown }[],
+        suggestedSystems: JSON.parse(raw.suggestedSystems || '[]') as { name?: string; systemSlug?: string; purpose?: string; [key: string]: unknown }[],
+        suggestedSystemDetails: JSON.parse(raw.suggestedSystemDetails || '[]') as { name?: string; detailType?: string; spec?: string; targetSystemSlug?: string; systemSlug?: string; [key: string]: unknown }[],
         content: raw.content,
       }
     }

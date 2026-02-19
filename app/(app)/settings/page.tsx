@@ -12,12 +12,13 @@ import {
   listAllUsers,
 } from '@/lib/repositories/workspace.repository'
 import { listWorkspaceAiConfigs } from '@/lib/repositories/workspace-ai-config.repository'
+import { parseAvailableModels } from '@/lib/ai/list-models'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export default async function SettingsPage() {
   const userId = await getCurrentUserId()
   const user = await findUserById(userId)
-  const workspace = await getOrCreateDefaultWorkspace()
+  const workspace = await getOrCreateDefaultWorkspace(userId)
   const [members, aiConfigs] = await Promise.all([
     listWorkspaceMembers(workspace.id),
     listWorkspaceAiConfigs(workspace.id),
@@ -48,7 +49,7 @@ export default async function SettingsPage() {
         </CardHeader>
       </Card>
 
-      <div className="grid gap-8 md:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <Card>
           <CardHeader>
             <h2 className="text-lg font-semibold">Profile</h2>
@@ -94,6 +95,7 @@ export default async function SettingsPage() {
                   hasApiKey: !!c.encryptedApiKey,
                   baseUrl: c.baseUrl ?? undefined,
                   defaultModel: c.defaultModel ?? undefined,
+                  availableModels: parseAvailableModels(c.availableModels),
                 }))}
               />
             </div>

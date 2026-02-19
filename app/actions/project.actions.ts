@@ -7,6 +7,7 @@ import * as projectService from '@/lib/services/project.service'
 
 export type UpdateProjectResult = { ok: true } | { ok: false; error: string }
 export type DeleteProjectResult = { ok: true } | { ok: false; error: string }
+export type ClearProjectDataResult = { ok: true } | { ok: false; error: string }
 
 export async function createProjectAction(formData: FormData): Promise<void> {
   const raw = {
@@ -66,4 +67,17 @@ export async function deleteProjectAction(projectId: string): Promise<DeleteProj
   revalidatePath('/')
   revalidatePath('/dashboard')
   redirect('/dashboard')
+}
+
+export async function clearProjectDataAction(
+  projectId: string
+): Promise<ClearProjectDataResult> {
+  const result = await projectService.clearProjectData(projectId)
+  if (!result.success) return { ok: false, error: result.error }
+  revalidatePath('/')
+  revalidatePath('/dashboard')
+  revalidatePath(`/projects/${projectId}`)
+  revalidatePath(`/projects/${projectId}/overview`)
+  revalidatePath(`/projects/${projectId}/edit`)
+  return { ok: true }
 }

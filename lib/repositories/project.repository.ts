@@ -76,6 +76,24 @@ export async function deleteProject(id: string): Promise<void> {
   await prisma.project.delete({ where: { id } })
 }
 
+/**
+ * Remove all project data (brainstorms, systems, dependencies, version plans,
+ * prompts, exports, idea stream, context snapshots). Keeps the project record.
+ * Use for resetting a project to retest quickly.
+ */
+export async function clearProjectData(projectId: string): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    await tx.projectContextSnapshot.deleteMany({ where: { projectId } })
+    await tx.promptHistory.deleteMany({ where: { projectId } })
+    await tx.export.deleteMany({ where: { projectId } })
+    await tx.versionPlan.deleteMany({ where: { projectId } })
+    await tx.ideaStreamThread.deleteMany({ where: { projectId } })
+    await tx.synthesizedOutput.deleteMany({ where: { projectId } })
+    await tx.brainstormSession.deleteMany({ where: { projectId } })
+    await tx.gameSystem.deleteMany({ where: { projectId } })
+  })
+}
+
 export type ProjectCountsByStatus = {
   total: number
   ideation: number

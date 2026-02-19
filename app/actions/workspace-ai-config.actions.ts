@@ -8,9 +8,11 @@ import {
 import {
   findWorkspaceAiConfig,
   upsertWorkspaceAiConfig,
+  updateWorkspaceAiConfigAvailableModels,
 } from '@/lib/repositories/workspace-ai-config.repository'
-import { encryptSecret } from '@/lib/security/encryption'
+import { encryptSecret, decryptSecret } from '@/lib/security/encryption'
 import { revalidatePath } from 'next/cache'
+import { listModelsForProvider } from '@/lib/ai/list-models'
 
 const ALLOWED_PROVIDERS = ['openai', 'anthropic'] as const
 
@@ -19,7 +21,7 @@ export async function saveWorkspaceAiConfigAction(
   formData: FormData
 ): Promise<{ success: boolean; error?: string }> {
   const currentUserId = await getCurrentUserId()
-  const workspace = await getOrCreateDefaultWorkspace()
+  const workspace = await getOrCreateDefaultWorkspace(currentUserId)
   if (workspace.id !== workspaceId) {
     return { success: false, error: 'Workspace not found' }
   }
@@ -55,13 +57,82 @@ export async function saveWorkspaceAiConfigAction(
       baseUrl,
       defaultModel,
     })
+    let apiKeyForList: string | null = rawApiKey || null
+    if (!apiKeyForList && existing) {
+      try {
+        apiKeyForList = decryptSecret(existing.encryptedApiKey)
+      } catch {
+        apiKeyForList = null
+      }
+    }
+    if (apiKeyForList) {
+      try {
+        const ids = await listModelsForProvider(providerId, {
+          apiKey: apiKeyForList,
+          baseUrl,
+        })
+        await updateWorkspaceAiConfigAvailableModels(
+          workspaceId,
+          providerId,
+          ids.length > 0 ? JSON.stringify(ids) : null
+        )
+      } catch {
+        // Leave availableModels unchanged on list failure
+      }
+    }
     revalidatePath('/settings')
+    revalidatePath('/projects', 'layout')
     return { success: true }
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Failed to save API config'
     if (message.includes('WORKSPACE_SECRETS_MASTER_KEY')) {
       return { success: false, error: 'Server encryption key not configured' }
     }
+    return { success: false, error: message }
+  }
+}
+
+export async function refreshWorkspaceModelsAction(
+  workspaceId: string,
+  providerId: string
+): Promise<{ success: boolean; error?: string }> {
+  const currentUserId = await getCurrentUserId()
+  const workspace = await getOrCreateDefaultWorkspace(currentUserId)
+  if (workspace.id !== workspaceId) {
+    return { success: false, error: 'Workspace not found' }
+  }
+  const isMember = await isWorkspaceMember(workspaceId, currentUserId)
+  if (!isMember) {
+    return { success: false, error: 'Not a workspace member' }
+  }
+  if (!providerId || !ALLOWED_PROVIDERS.includes(providerId as (typeof ALLOWED_PROVIDERS)[number])) {
+    return { success: false, error: 'Invalid provider' }
+  }
+  const config = await findWorkspaceAiConfig(workspaceId, providerId)
+  if (!config?.encryptedApiKey) {
+    return { success: false, error: 'No API key configured' }
+  }
+  let apiKey: string
+  try {
+    apiKey = decryptSecret(config.encryptedApiKey)
+  } catch {
+    return { success: false, error: 'Could not read API key' }
+  }
+  try {
+    const ids = await listModelsForProvider(providerId, {
+      apiKey,
+      baseUrl: config.baseUrl,
+    })
+    await updateWorkspaceAiConfigAvailableModels(
+      workspaceId,
+      providerId,
+      ids.length > 0 ? JSON.stringify(ids) : null
+    )
+    revalidatePath('/settings')
+    revalidatePath('/projects', 'layout')
+    return { success: true }
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Failed to refresh models'
     return { success: false, error: message }
   }
 }

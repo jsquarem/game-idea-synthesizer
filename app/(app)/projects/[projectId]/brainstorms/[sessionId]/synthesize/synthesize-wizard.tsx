@@ -28,18 +28,27 @@ import {
   Inbox,
   Star,
   FileCheck,
+  Link2,
+  Trash2,
 } from 'lucide-react'
 import * as AccordionPrimitive from '@radix-ui/react-accordion'
 import { Accordion, AccordionContent, AccordionItem } from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import oneDark from 'react-syntax-highlighter/dist/esm/styles/prism/one-dark'
 import { cn } from '@/lib/utils'
 import type { ExtractedSystemStub, ExtractedSystemDetailStub } from '@/lib/ai/parse-synthesis-response'
 import { parseSynthesisResponse } from '@/lib/ai/parse-synthesis-response'
+import {
+  groupAndSortModels,
+  getModelDescription,
+  resolveSuggestedModel,
+} from '@/lib/utils/group-models-for-select'
 import { extractionToMarkdown } from '@/lib/services/extraction-markdown'
-import { convertSynthesisAction } from '@/app/actions/synthesis.actions'
+import { convertSynthesisAction, addSuggestedSystemsToExtractionAction } from '@/app/actions/synthesis.actions'
 import type { CandidateSelection } from '@/lib/services/synthesis-convert.service'
 
 const STEPS = ['Configure', 'Processing', 'Review'] as const
@@ -88,6 +97,11 @@ type ExtractionAccordionProps = {
   onToggleSystemSelection: (systemIndex: number) => void
   excludedDetailIndices?: number[]
   onToggleDetailExclude?: (detailIndex: number) => void
+  /** When provided, show an "Interactions" section in expanded content with labels and remove. */
+  interactionEdges?: { sourceSlug: string; targetSlug: string; description?: string }[]
+  onRemoveInteraction?: (edge: { sourceSlug: string; targetSlug: string; description?: string }) => void
+  effectiveSourceSlugByIndex?: Map<number, string>
+  getLabelForSlug?: (slug: string) => string
 }
 
 function ExtractionAccordion({
@@ -103,6 +117,10 @@ function ExtractionAccordion({
   onToggleSystemSelection,
   excludedDetailIndices = [],
   onToggleDetailExclude,
+  interactionEdges,
+  onRemoveInteraction,
+  effectiveSourceSlugByIndex,
+  getLabelForSlug,
 }: ExtractionAccordionProps) {
   return (
     <Accordion
@@ -159,16 +177,41 @@ function ExtractionAccordion({
                       {(s.purpose as string).length > 120 ? '…' : ''}
                     </span>
                   )}
+                  {(s.dependencies ?? []).length > 0 ? (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      <span className="text-xs text-muted-foreground">Interacts with:</span>
+                      {(s.dependencies ?? []).map((slug) => (
+                        <Badge
+                          key={slug}
+                          variant="secondary"
+                          className="text-xs font-normal px-1.5 py-0"
+                        >
+                          {slug}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground/70 mt-1">No interaction links</span>
+                  )}
                 </div>
                 {showSelectionAndFinalize && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={isSelected ? 'default' : 'outline'}
-                    className="shrink-0 ml-auto mr-2"
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    className={cn(
+                      buttonVariants({ size: 'sm', variant: isSelected ? 'default' : 'outline' }),
+                      'shrink-0 ml-auto mr-2 cursor-pointer'
+                    )}
                     onClick={(e) => {
                       e.stopPropagation()
                       onToggleSystemSelection(i)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        onToggleSystemSelection(i)
+                      }
                     }}
                     aria-label={`${isSelected ? 'Include' : 'Exclude'}: ${s.name ?? s.systemSlug ?? 'system'}`}
                   >
@@ -183,7 +226,7 @@ function ExtractionAccordion({
                         Exclude
                       </>
                     )}
-                  </Button>
+                  </span>
                 )}
               </AccordionPrimitive.Trigger>
             </AccordionPrimitive.Header>
@@ -262,6 +305,70 @@ function ExtractionAccordion({
                     </ul>
                   )}
                 </section>
+                {showSelectionAndFinalize &&
+                  interactionEdges != null &&
+                  onRemoveInteraction != null &&
+                  effectiveSourceSlugByIndex != null &&
+                  getLabelForSlug != null && (
+                    <section className="rounded-md border border-border bg-background p-3">
+                      <h4 className="text-sm font-medium flex items-center gap-1.5">
+                        <Link2 className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                        Interacts with
+                      </h4>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Systems this one uses or interfaces with. Remove to drop the link.
+                      </p>
+                      {(() => {
+                        const effectiveSlug =
+                          effectiveSourceSlugByIndex.get(i) ?? s.systemSlug ?? ''
+                        const outgoing = interactionEdges.filter(
+                          (e) => e.sourceSlug === effectiveSlug
+                        )
+                        if (outgoing.length === 0) {
+                          return (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              No interaction links for this system.
+                            </p>
+                          )
+                        }
+                        return (
+                          <ul className="mt-2 space-y-2">
+                            {outgoing.map((edge) => (
+                              <li
+                                key={`${edge.sourceSlug}-${edge.targetSlug}`}
+                                className="flex flex-wrap items-center gap-2 rounded-md border border-border/50 bg-muted/10 p-2"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <span className="text-xs font-medium">
+                                    {getLabelForSlug(edge.targetSlug)}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground ml-1">
+                                    ({edge.targetSlug})
+                                  </span>
+                                  {edge.description && (
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      {edge.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="ml-auto h-7 text-destructive hover:text-destructive shrink-0"
+                                  onClick={() => onRemoveInteraction(edge)}
+                                  aria-label={`Remove link to ${edge.targetSlug}`}
+                                >
+                                  <Trash2 className="size-3.5 shrink-0" aria-hidden />
+                                  Remove
+                                </Button>
+                              </li>
+                            ))}
+                          </ul>
+                        )
+                      })()}
+                    </section>
+                  )}
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -337,7 +444,7 @@ export type WizardConfig = {
   sessionId: string
   sessionTitle: string
   snapshotDate: string | null
-  providerConfigs: { providerId: string; defaultModel: string | null }[]
+  providerConfigs: { providerId: string; defaultModel: string | null; availableModels?: string[] }[]
   sourcePreview: string
 }
 
@@ -352,6 +459,8 @@ type WizardProps = {
   existingOutput?: {
     extractedSystems: ExtractedSystemStub[]
     extractedSystemDetails: ExtractedSystemDetailStub[]
+    suggestedSystems?: ExtractedSystemStub[]
+    suggestedSystemDetails?: ExtractedSystemDetailStub[]
     content: string
   } | null
   existingProjectSystems?: ExistingProjectSystemForReview[]
@@ -369,9 +478,18 @@ export function SynthesizeWizard({
   const [step, setStep] = useState(initialStep(existingOutputId, existingOutput))
   const [maxStepReached, setMaxStepReached] = useState(initialStep(existingOutputId, existingOutput))
   const defaultProvider = initialConfig.providerConfigs[0]
+  const defaultModels = defaultProvider?.availableModels ?? []
+  const defaultSuggested = resolveSuggestedModel(
+    defaultProvider?.providerId ?? 'openai',
+    defaultModels
+  )
   const [config, setConfig] = useState<SynthesisConfig>({
     providerId: defaultProvider?.providerId ?? 'openai',
-    model: defaultProvider?.defaultModel ?? 'gpt-4o-mini',
+    model:
+      defaultProvider?.defaultModel ??
+      defaultSuggested ??
+      defaultModels[0] ??
+      'gpt-4o-mini',
     focusAreas: '',
     rerunMode: 'rerun',
   })
@@ -385,13 +503,19 @@ export function SynthesizeWizard({
   const [extractedSystemDetails, setExtractedSystemDetails] = useState<
     ExtractedSystemDetailStub[]
   >(existingOutput?.extractedSystemDetails ?? [])
+  const [suggestedSystems, setSuggestedSystems] = useState<ExtractedSystemStub[]>(
+    existingOutput?.suggestedSystems ?? []
+  )
+  const [suggestedSystemDetails, setSuggestedSystemDetails] = useState<
+    ExtractedSystemDetailStub[]
+  >(existingOutput?.suggestedSystemDetails ?? [])
   const [runDurationMs, setRunDurationMs] = useState<number | null>(null)
   const [tokenCount, setTokenCount] = useState<{ prompt?: number; completion?: number } | null>(null)
   const [convertSelections, setConvertSelections] = useState<
     Map<number, { action: 'create' | 'merge' | 'discard'; slug?: string; existingSystemId?: string; detailIndices: number[] }>
   >(new Map())
   const [dependencyEdges, setDependencyEdges] = useState<
-    { sourceSlug: string; targetSlug: string }[]
+    { sourceSlug: string; targetSlug: string; description?: string }[]
   >([])
   const [convertError, setConvertError] = useState<string | null>(null)
   const [isConverting, setIsConverting] = useState(false)
@@ -403,7 +527,7 @@ export function SynthesizeWizard({
     create: number[]
     merge: { candidateIndex: number; intoExistingSlug: string }[]
     discard: number[]
-    dependencies: { sourceSlug: string; targetSlug: string }[]
+    dependencies: { sourceSlug: string; targetSlug: string; description?: string }[]
     rationale?: string
   } | null>(null)
   const [suggestUserPrompt, setSuggestUserPrompt] = useState<string | null>(null)
@@ -418,6 +542,8 @@ export function SynthesizeWizard({
   const [isSuggesting, setIsSuggesting] = useState(false)
   const [suggestError, setSuggestError] = useState<string | null>(null)
   const [expandedSystemValues, setExpandedSystemValues] = useState<string[]>([])
+  const [expandedSuggestedValues, setExpandedSuggestedValues] = useState<string[]>([])
+  const [isAddingSuggested, setIsAddingSuggested] = useState(false)
   const [selectedSystemIndices, setSelectedSystemIndices] = useState<number[]>([])
   const [excludedDetailIndices, setExcludedDetailIndices] = useState<number[]>([])
   const [lastRefineOutput, setLastRefineOutput] = useState<string | null>(null)
@@ -444,6 +570,17 @@ export function SynthesizeWizard({
   }, [])
 
   const streamingResponseRef = useRef<HTMLPreElement>(null)
+
+  // When provider has availableModels and current model is not in list, use suggested or first available
+  useEffect(() => {
+    const pc = initialConfig.providerConfigs.find((p) => p.providerId === config.providerId)
+    const models = pc?.availableModels ?? []
+    if (models.length > 0 && config.model && !models.includes(config.model)) {
+      const fallback = resolveSuggestedModel(config.providerId, models) ?? models[0]
+      if (fallback) setConfig((c) => ({ ...c, model: fallback }))
+    }
+  }, [config.providerId, config.model, initialConfig.providerConfigs])
+
   useEffect(() => {
     if (!isStreaming || !streamingResponseRef.current) return
     streamingResponseRef.current.scrollTop = streamingResponseRef.current.scrollHeight
@@ -567,6 +704,8 @@ export function SynthesizeWizard({
       }
       setExtractedSystems(data.extractedSystems ?? extractedSystems)
       setExtractedSystemDetails(data.extractedSystemDetails ?? extractedSystemDetails)
+      if (Array.isArray(data.suggestedSystems)) setSuggestedSystems(data.suggestedSystems)
+      if (Array.isArray(data.suggestedSystemDetails)) setSuggestedSystemDetails(data.suggestedSystemDetails)
       setLastRefineOutput(data.rawContent ?? null)
       setRefineMessages((prev) => [
         ...prev,
@@ -685,6 +824,8 @@ export function SynthesizeWizard({
                 rawContent?: string
                 extractedSystems?: ExtractedSystemStub[]
                 extractedSystemDetails?: ExtractedSystemDetailStub[]
+                suggestedSystems?: ExtractedSystemStub[]
+                suggestedSystemDetails?: ExtractedSystemDetailStub[]
               }
               if (currentEvent === 'prompt' && data.prompt != null) setPromptUsed(data.prompt)
               if (currentEvent === 'chunk' && data.text) setStreamingText((t) => t + data.text)
@@ -698,6 +839,8 @@ export function SynthesizeWizard({
                 if (data.rawContent != null) setRawOutput(data.rawContent)
                 if (Array.isArray(data.extractedSystems)) setExtractedSystems(data.extractedSystems)
                 if (Array.isArray(data.extractedSystemDetails)) setExtractedSystemDetails(data.extractedSystemDetails)
+                if (Array.isArray(data.suggestedSystems)) setSuggestedSystems(data.suggestedSystems)
+                if (Array.isArray(data.suggestedSystemDetails)) setSuggestedSystemDetails(data.suggestedSystemDetails)
               }
               if (data.message) setRunError(data.message)
             } catch {
@@ -717,6 +860,8 @@ export function SynthesizeWizard({
             rawContent?: string
             extractedSystems?: ExtractedSystemStub[]
             extractedSystemDetails?: ExtractedSystemDetailStub[]
+            suggestedSystems?: ExtractedSystemStub[]
+            suggestedSystemDetails?: ExtractedSystemDetailStub[]
           }
           if (data.outputId) {
             setOutputId(data.outputId)
@@ -728,6 +873,8 @@ export function SynthesizeWizard({
             if (data.rawContent != null) setRawOutput(data.rawContent)
             if (Array.isArray(data.extractedSystems)) setExtractedSystems(data.extractedSystems)
             if (Array.isArray(data.extractedSystemDetails)) setExtractedSystemDetails(data.extractedSystemDetails)
+            if (Array.isArray(data.suggestedSystems)) setSuggestedSystems(data.suggestedSystems)
+            if (Array.isArray(data.suggestedSystemDetails)) setSuggestedSystemDetails(data.suggestedSystemDetails)
           }
         } catch {
           // ignore
@@ -764,18 +911,81 @@ export function SynthesizeWizard({
         detailIndices,
       }
     })
+    let edgesToApply: { sourceSlug: string; targetSlug: string; description?: string }[]
+    if (dependencyEdges.length > 0) {
+      edgesToApply = dependencyEdges
+    } else if (convertSuggestion?.dependencies?.length) {
+      edgesToApply = convertSuggestion.dependencies
+    } else {
+      const nonDiscard = selections.filter((s) => s.action !== 'discard')
+      const slugifyName = (name: string) =>
+        name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+      const idToSlug = new Map(
+        existingSystemsForSuggest.map((s) => [s.id, s.systemSlug])
+      )
+      const effectiveSlugs = new Set<string>()
+      for (const sel of nonDiscard) {
+        const stub = extractedSystems[sel.candidateIndex]
+        if (!stub) continue
+        const slug =
+          sel.action === 'create'
+            ? sel.slug ?? stub.systemSlug ?? slugifyName(stub.name ?? 'system')
+            : sel.existingSystemId
+              ? idToSlug.get(sel.existingSystemId)
+              : undefined
+        if (slug) effectiveSlugs.add(slug)
+      }
+      const seen = new Set<string>()
+      edgesToApply = []
+      for (const sel of nonDiscard) {
+        const stub = extractedSystems[sel.candidateIndex]
+        if (!stub?.dependencies?.length) continue
+        const sourceSlug =
+          sel.action === 'create'
+            ? sel.slug ?? stub.systemSlug ?? slugifyName(stub.name ?? 'system')
+            : sel.existingSystemId
+              ? idToSlug.get(sel.existingSystemId)
+              : undefined
+        if (!sourceSlug) continue
+        for (const targetSlug of stub.dependencies) {
+          if (!effectiveSlugs.has(targetSlug)) continue
+          const key = `${sourceSlug}\n${targetSlug}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          edgesToApply.push({ sourceSlug, targetSlug })
+        }
+      }
+    }
     const result = await convertSynthesisAction(
       outputId,
       selections.filter((s) => s.action !== 'discard'),
-      dependencyEdges
+      edgesToApply
     )
     setIsConverting(false)
     if (result.success && result.projectId) {
-      window.location.href = `/projects/${result.projectId}/systems`
+      window.location.href = `/projects/${result.projectId}/dependencies`
       return
     }
-    setConvertError(result.cycleError ?? result.error ?? 'Convert failed')
-  }, [outputId, convertSelections, dependencyEdges, extractedSystems, extractedSystemDetails, excludedDetailIndices])
+    setConvertError(result.error ?? 'Convert failed')
+  }, [outputId, convertSelections, convertSuggestion, dependencyEdges, extractedSystems, extractedSystemDetails, excludedDetailIndices, existingSystemsForSuggest])
+
+  const handleAddSuggestedToExtraction = useCallback(
+    async (suggestedIndex: number) => {
+      if (!outputId || isAddingSuggested) return
+      setIsAddingSuggested(true)
+      try {
+        const result = await addSuggestedSystemsToExtractionAction(outputId, [suggestedIndex])
+        if (!result.success) return
+        if (result.extractedSystems != null) setExtractedSystems(result.extractedSystems)
+        if (result.extractedSystemDetails != null) setExtractedSystemDetails(result.extractedSystemDetails)
+        if (result.suggestedSystems != null) setSuggestedSystems(result.suggestedSystems)
+        if (result.suggestedSystemDetails != null) setSuggestedSystemDetails(result.suggestedSystemDetails)
+      } finally {
+        setIsAddingSuggested(false)
+      }
+    },
+    [outputId, isAddingSuggested]
+  )
 
   const handleGetSuggestion = useCallback(async () => {
     if (!outputId || isSuggesting) return
@@ -900,6 +1110,18 @@ export function SynthesizeWizard({
     [extractedSystems, extractedSystemDetails, initialConfig.sessionTitle]
   )
 
+  const formattedRawOutput = useMemo(() => {
+    if (rawOutput == null || rawOutput.trim() === '') return rawOutput ?? ''
+    try {
+      const parsed = JSON.parse(rawOutput) as unknown
+      return typeof parsed === 'object' && parsed !== null
+        ? JSON.stringify(parsed, null, 2)
+        : rawOutput
+    } catch {
+      return rawOutput
+    }
+  }, [rawOutput])
+
   const { systemStatus, detailStatus } = useMemo(() => {
     const empty = {
       systemStatus: {} as Record<number, 'added' | 'updated'>,
@@ -932,6 +1154,104 @@ export function SynthesizeWizard({
     })
     return { systemStatus, detailStatus }
   }, [existingProjectSystems, extractedSystems, extractedSystemDetails])
+
+  const effectiveSourceSlugByIndex = useMemo(() => {
+    const map = new Map<number, string>()
+    extractedSystems.forEach((s, i) => {
+      const sel = convertSelections.get(i)
+      const fallback = s.systemSlug ?? (s.name ?? 'system').toLowerCase().replace(/\s+/g, '-')
+      if (!sel) {
+        map.set(i, fallback)
+        return
+      }
+      if (sel.action === 'merge' && sel.existingSystemId) {
+        map.set(
+          i,
+          existingSystemsForSuggest.find((x) => x.id === sel.existingSystemId)?.systemSlug ??
+            fallback
+        )
+        return
+      }
+      if (sel.action === 'create') {
+        map.set(i, sel.slug ?? fallback)
+        return
+      }
+      map.set(i, fallback)
+    })
+    return map
+  }, [convertSelections, existingSystemsForSuggest, extractedSystems])
+
+  const edgesDerivedFromStubs = useMemo(() => {
+    const slugifyName = (name: string) =>
+      name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    const idToSlug = new Map(
+      existingSystemsForSuggest.map((s) => [s.id, s.systemSlug])
+    )
+    const effectiveSlugs = new Set<string>()
+    extractedSystems.forEach((_s, i) => {
+      const sel = convertSelections.get(i)
+      if (sel?.action === 'discard') return
+      const stub = extractedSystems[i]
+      if (!stub) return
+      const slug =
+        sel?.action === 'create'
+          ? sel.slug ?? stub.systemSlug ?? slugifyName(stub.name ?? 'system')
+          : sel?.action === 'merge' && sel.existingSystemId
+            ? idToSlug.get(sel.existingSystemId)
+            : stub.systemSlug ?? slugifyName(stub.name ?? 'system')
+      if (slug) effectiveSlugs.add(slug)
+    })
+    const seen = new Set<string>()
+    const edges: { sourceSlug: string; targetSlug: string; description?: string }[] = []
+    extractedSystems.forEach((stub, i) => {
+      const sel = convertSelections.get(i)
+      if (sel?.action === 'discard' || !stub?.dependencies?.length) return
+      const sourceSlug = effectiveSourceSlugByIndex.get(i) ?? stub.systemSlug ?? slugifyName(stub.name ?? 'system')
+      for (const targetSlug of stub.dependencies) {
+        if (!effectiveSlugs.has(targetSlug)) continue
+        const key = `${sourceSlug}\n${targetSlug}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        edges.push({ sourceSlug, targetSlug })
+      }
+    })
+    return edges
+  }, [convertSelections, existingSystemsForSuggest, extractedSystems, effectiveSourceSlugByIndex])
+
+  const getLabelForSlug = useCallback(
+    (slug: string) => {
+      const s = extractedSystems.find(
+        (x) => (x.systemSlug ?? '').toLowerCase() === slug.toLowerCase()
+      )
+      return s?.name ?? slug
+    },
+    [extractedSystems]
+  )
+
+  const handleRemoveInteraction = useCallback(
+    (edge: { sourceSlug: string; targetSlug: string }) => {
+      setDependencyEdges((prev) => {
+        const list =
+          prev.length > 0
+            ? prev
+            : (convertSuggestion?.dependencies?.length
+                ? convertSuggestion.dependencies
+                : edgesDerivedFromStubs)
+        return list.filter(
+          (e) =>
+            !(e.sourceSlug === edge.sourceSlug && e.targetSlug === edge.targetSlug)
+        )
+      })
+    },
+    [convertSuggestion?.dependencies, edgesDerivedFromStubs]
+  )
+
+  const reviewInteractionEdges =
+    dependencyEdges.length > 0
+      ? dependencyEdges
+      : (convertSuggestion?.dependencies?.length
+          ? convertSuggestion.dependencies
+          : edgesDerivedFromStubs)
 
   return (
     <div className="flex h-full min-h-0 flex-col space-y-6">
@@ -1009,11 +1329,16 @@ export function SynthesizeWizard({
                     const pc = initialConfig.providerConfigs.find(
                       (p) => p.providerId === providerId
                     )
-                    setConfig((c) => ({
-                      ...c,
-                      providerId,
-                      model: pc?.defaultModel ?? c.model ?? 'gpt-4o-mini',
-                    }))
+                    setConfig((c) => {
+                      const models = pc?.availableModels ?? []
+                      const nextModel =
+                        pc?.defaultModel ??
+                        resolveSuggestedModel(providerId, models) ??
+                        models[0] ??
+                        c.model ??
+                        'gpt-4o-mini'
+                      return { ...c, providerId, model: nextModel }
+                    })
                   }}
                 >
                   {initialConfig.providerConfigs.map((pc) => (
@@ -1025,14 +1350,55 @@ export function SynthesizeWizard({
               </div>
               <div>
                 <label className="text-sm font-medium">Model</label>
-                <input
-                  className="mt-1 w-full rounded border bg-background px-3 py-2"
-                  value={config.model}
-                  onChange={(e) =>
-                    setConfig((c) => ({ ...c, model: e.target.value }))
+                {(() => {
+                  const pc = initialConfig.providerConfigs.find(
+                    (p) => p.providerId === config.providerId
+                  )
+                  const models = pc?.availableModels ?? []
+                  const suggested = resolveSuggestedModel(config.providerId, models)
+                  if (models.length > 0) {
+                    const value = models.includes(config.model)
+                      ? config.model
+                      : (suggested ?? models[0] ?? '')
+                    return (
+                      <select
+                        className="mt-1 w-full rounded border bg-background px-3 py-2"
+                        value={value}
+                        onChange={(e) =>
+                          setConfig((c) => ({ ...c, model: e.target.value }))
+                        }
+                      >
+                        {groupAndSortModels(models).map((group) => (
+                          <optgroup key={group.label} label={group.label}>
+                            {group.models.map((id) => (
+                              <option
+                                key={id}
+                                value={id}
+                                title={
+                                  getModelDescription(config.providerId, id) ??
+                                  undefined
+                                }
+                              >
+                                {id}
+                                {suggested === id ? ' — Suggested' : ''}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    )
                   }
-                  placeholder="gpt-4o-mini"
-                />
+                  return (
+                    <input
+                      className="mt-1 w-full rounded border bg-background px-3 py-2"
+                      value={config.model}
+                      onChange={(e) =>
+                        setConfig((c) => ({ ...c, model: e.target.value }))
+                      }
+                      placeholder="gpt-4o-mini"
+                    />
+                  )
+                })()}
               </div>
               <div>
                 <label className="text-sm font-medium">Rerun mode</label>
@@ -1318,7 +1684,7 @@ export function SynthesizeWizard({
                       Finalize
                     </h3>
                     <p className="text-xs text-muted-foreground">
-                      Create selected systems (or merge into existing). Use Get AI suggestion to fill create/merge/discard and dependencies.
+                      Create selected systems (or merge into existing). Use Get AI suggestion to fill create/merge/discard and interaction links.
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
@@ -1436,9 +1802,11 @@ export function SynthesizeWizard({
                           )}
                           {convertSuggestion.dependencies && convertSuggestion.dependencies.length > 0 && (
                             <li>
-                              <span className="text-muted-foreground">Dependencies:</span>{' '}
+                              <span className="text-muted-foreground">Interaction links:</span>{' '}
                               {convertSuggestion.dependencies
-                                .map((d) => `${d.sourceSlug} → ${d.targetSlug}`)
+                                .map((d) =>
+                                  `${d.sourceSlug} → ${d.targetSlug}${d.description ? ` (${d.description})` : ''}`
+                                )
                                 .join('; ')}
                             </li>
                           )}
@@ -1446,7 +1814,7 @@ export function SynthesizeWizard({
                             convertSuggestion.merge.length === 0 &&
                             convertSuggestion.discard.length === 0 &&
                             (!convertSuggestion.dependencies || convertSuggestion.dependencies.length === 0) && (
-                              <li className="text-muted-foreground">No create/merge/discard or dependencies suggested.</li>
+                              <li className="text-muted-foreground">No create/merge/discard or interaction links suggested.</li>
                             )}
                         </ul>
                         {convertSuggestion.rationale && (
@@ -1523,10 +1891,116 @@ export function SynthesizeWizard({
                       onToggleDetailExclude={handleToggleDetailExclude}
                       systemStatus={systemStatus}
                       detailStatus={detailStatus}
+                      interactionEdges={reviewInteractionEdges}
+                      onRemoveInteraction={handleRemoveInteraction}
+                      effectiveSourceSlugByIndex={effectiveSourceSlugByIndex}
+                      getLabelForSlug={getLabelForSlug}
                     />
+                    {suggestedSystems.length > 0 && (
+                      <div className="mt-6 rounded-md border border-border border-l-4 border-l-primary/50 bg-muted/30 p-4">
+                        <h3 className="text-sm font-medium flex items-center gap-1.5 mb-2">
+                          <Lightbulb className="size-3.5 shrink-0 text-primary" aria-hidden />
+                          Suggested systems (fill gaps)
+                        </h3>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          These systems were suggested to fill design gaps. Add them to extraction to include in Create selected.
+                        </p>
+                        <Accordion
+                          type="multiple"
+                          value={expandedSuggestedValues}
+                          onValueChange={setExpandedSuggestedValues}
+                          className="mt-2"
+                        >
+                          {suggestedSystems.map((s, i) => {
+                            const detailsForSystem = getSystemDetailsForSystem(
+                              s,
+                              i,
+                              suggestedSystemDetails,
+                              suggestedSystems
+                            )
+                            return (
+                              <AccordionItem
+                                key={i}
+                                value={`suggested-${i}`}
+                                className="border border-border/60 rounded-md bg-background/60 mb-2 overflow-hidden"
+                              >
+                                <AccordionPrimitive.Header className="flex items-center gap-2">
+                                  <AccordionPrimitive.Trigger className="flex flex-1 items-center gap-2 py-3 px-3 text-left text-sm font-medium transition-all outline-none hover:no-underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&[data-state=open]>svg]:rotate-180 min-h-[3rem] [&>svg]:shrink-0">
+                                    <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+                                    <div className="flex flex-1 flex-col items-start gap-0.5 min-w-0 text-left">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-base font-medium">
+                                          {s.name ?? s.systemSlug ?? 'Unnamed'}
+                                        </span>
+                                        <Badge variant="secondary" className="text-xs font-normal gap-1 bg-primary/10 text-primary border-primary/20">
+                                          <Lightbulb className="size-3 shrink-0" aria-hidden />
+                                          Suggestion
+                                        </Badge>
+                                      </div>
+                                      {s.purpose && (
+                                        <span className="text-sm font-normal text-muted-foreground">
+                                          {(s.purpose as string).slice(0, 120)}
+                                          {(s.purpose as string).length > 120 ? '…' : ''}
+                                        </span>
+                                      )}
+                                      {(s.dependencies ?? []).length > 0 ? (
+                                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                          <span className="text-xs text-muted-foreground">Interacts with:</span>
+                                          {(s.dependencies ?? []).map((slug) => (
+                                            <Badge key={slug} variant="secondary" className="text-xs font-normal px-1.5 py-0">
+                                              {slug}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  </AccordionPrimitive.Trigger>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="default"
+                                    className="shrink-0 mr-2"
+                                    disabled={isAddingSuggested}
+                                    onClick={() => handleAddSuggestedToExtraction(i)}
+                                  >
+                                    {isAddingSuggested ? (
+                                      <Loader2 className="size-3.5 shrink-0 animate-spin" aria-hidden />
+                                    ) : (
+                                      <PlusCircle className="size-3.5 shrink-0" aria-hidden />
+                                    )}
+                                    Add to extraction
+                                  </Button>
+                                </AccordionPrimitive.Header>
+                                <AccordionContent className="border-t border-border/60 bg-muted/20 px-4 py-3">
+                                  <div className="space-y-4">
+                                    <section className="rounded-md border border-border bg-background/80 p-3">
+                                      <h4 className="text-sm font-medium">System details</h4>
+                                      {detailsForSystem.length === 0 ? (
+                                        <p className="mt-1 text-xs text-muted-foreground">No system details.</p>
+                                      ) : (
+                                        <ul className="mt-2 space-y-3">
+                                          {detailsForSystem.map((b, bi) => (
+                                            <li key={bi} className="rounded-md border border-border/50 bg-muted/10 p-2">
+                                              <div className="mb-1 text-xs text-muted-foreground">
+                                                {b.name} ({b.detailType ?? 'mechanic'})
+                                              </div>
+                                              <p className="whitespace-pre-wrap text-xs text-foreground">{b.spec ?? '—'}</p>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      )}
+                                    </section>
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            )
+                          })}
+                        </Accordion>
+                      </div>
+                    )}
                   </div>
                 </TabsContent>
-                <TabsContent value="prompt-raw" className="mt-0 flex min-h-0 flex-1 flex-col space-y-4 overflow-y-auto pt-0">
+                <TabsContent value="prompt-raw" className="mt-0 flex min-h-0 min-w-0 flex-1 flex-col space-y-4 overflow-y-auto pt-0">
                   <div className="rounded-md border border-border bg-muted/20 p-4">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="text-sm font-medium">Prompt used</h3>
@@ -1547,9 +2021,22 @@ export function SynthesizeWizard({
                       )}
                     </div>
                     {promptUsed != null ? (
-                      <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap rounded border bg-background p-3 text-xs">
-                        {promptUsed}
-                      </pre>
+                      <div className="mt-2 max-h-80 min-w-0 overflow-auto rounded border bg-background text-xs">
+                        <SyntaxHighlighter
+                          language="text"
+                          style={oneDark}
+                          customStyle={{
+                            margin: 0,
+                            padding: '0.75rem',
+                            fontSize: '0.75rem',
+                            background: 'transparent',
+                          }}
+                          PreTag="pre"
+                          codeTagProps={{ className: 'whitespace-pre-wrap' }}
+                        >
+                          {promptUsed}
+                        </SyntaxHighlighter>
+                      </div>
                     ) : (
                       <p className="mt-2 text-sm text-muted-foreground">
                         Prompt not stored for this run.
@@ -1576,9 +2063,22 @@ export function SynthesizeWizard({
                       )}
                     </div>
                     {rawOutput != null ? (
-                      <pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap rounded border bg-background p-3 text-xs">
-                        {rawOutput}
-                      </pre>
+                      <div className="mt-2 max-h-96 min-w-0 overflow-auto rounded border bg-background text-xs">
+                        <SyntaxHighlighter
+                          language="json"
+                          style={oneDark}
+                          customStyle={{
+                            margin: 0,
+                            padding: '0.75rem',
+                            fontSize: '0.75rem',
+                            background: 'transparent',
+                          }}
+                          PreTag="pre"
+                          codeTagProps={{ className: 'whitespace-pre-wrap' }}
+                        >
+                          {formattedRawOutput}
+                        </SyntaxHighlighter>
+                      </div>
                     ) : (
                       <p className="mt-2 text-sm text-muted-foreground">
                         Loading…
@@ -1641,11 +2141,22 @@ export function SynthesizeWizard({
                     <Copy className="h-4 w-4" />
                   )}
                 </Button>
-                <pre className="max-h-full overflow-auto rounded border bg-muted/30 p-4 pr-12 text-xs">
-                  <code className="whitespace-pre-wrap font-mono text-foreground" lang="markdown">
+                <div className="max-h-full overflow-auto rounded border bg-muted/30 text-xs pr-12">
+                  <SyntaxHighlighter
+                    language="markdown"
+                    style={oneDark}
+                    customStyle={{
+                      margin: 0,
+                      padding: '1rem',
+                      fontSize: '0.75rem',
+                      background: 'transparent',
+                    }}
+                    PreTag="pre"
+                    codeTagProps={{ className: 'whitespace-pre-wrap' }}
+                  >
                     {markdownPreview}
-                  </code>
-                </pre>
+                  </SyntaxHighlighter>
+                </div>
               </div>
             )}
           </CardContent>

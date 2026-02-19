@@ -97,3 +97,12 @@ export async function updateSystemDetail(
 export async function deleteSystemDetail(id: string): Promise<void> {
   await prisma.systemDetail.delete({ where: { id } })
 }
+
+export async function deleteSystemDetailsByGameSystemId(
+  gameSystemId: string
+): Promise<number> {
+  const result = await prisma.systemDetail.deleteMany({
+    where: { gameSystemId },
+  })
+  return result.count
+}

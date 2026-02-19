@@ -25,7 +25,7 @@ export function createOpenAIProvider(config: WorkspaceProviderConfig): {
       const response = await client.chat.completions.create({
         model,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: options?.maxTokens ?? 4096,
+        max_completion_tokens: options?.maxTokens ?? 4096,
       })
       const choice = response.choices[0]
       const content = choice?.message?.content ?? ''
@@ -50,7 +50,7 @@ export function createOpenAIProvider(config: WorkspaceProviderConfig): {
       const stream = await client.chat.completions.create({
         model,
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: options?.maxTokens ?? 4096,
+        max_completion_tokens: options?.maxTokens ?? 4096,
         stream: true,
       })
       let usage: CompletionResult['usage'] | undefined

@@ -38,6 +38,7 @@ Provides a provider-agnostic interface for AI completion calls. Manages prompt t
 - Context assembly: `lib/services/context-builder.service.ts` (build full context, delta since snapshot, assemble for synthesis); consumed by synthesis service.
 - **Workspace provider config (decrypt at runtime):** `lib/ai/get-workspace-provider-config.ts` — getDecryptedWorkspaceProviderConfig(workspaceId, providerId); never send apiKey to client.
 - Synthesis streaming: `app/api/projects/[projectId]/synthesis/stream/route.ts`; refine: `.../synthesis/refine/route.ts` (accepts optional **focusedSystemSlugs** for refine-selected-systems); convert-suggest: `.../synthesis/convert-suggest/route.ts`
+- System evolve: `app/api/projects/[projectId]/systems/[systemId]/evolve/route.ts` (GET history, POST evolve); `lib/services/system-evolve.service.ts` (runSystemEvolve, runCompletion, parse, apply to GameSystem + SystemDetail)
 
 ## Current Implementation
 - Workspace-scoped AI config is stored encrypted (see workspace app-system and `lib/security/encryption.ts`). Provider config is decrypted only in server runtime. Synthesis uses context snapshot + delta (context builder) and single AI request (streaming); prompt assembled in synthesis.service; OpenAI provider used when providerId is "openai".
@@ -62,3 +63,4 @@ Provides a provider-agnostic interface for AI completion calls. Manages prompt t
 - 2026-02-18: Context assembly via context-builder (snapshot + delta); run-completion and OpenAI provider; synthesis streaming route.
 - 2026-02-18: Refine and convert-suggest routes use runCompletion (non-streaming).
 - 2026-02-18: Refine route accepts optional focusedSystemSlugs (array) for "refine selected systems" in one call.
+- 2026-02-18: System evolve API and service: single-system refinement with persisted conversation (SystemEvolveMessage), apply AI response to GameSystem and SystemDetails.
