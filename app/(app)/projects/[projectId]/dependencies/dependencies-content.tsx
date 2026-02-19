@@ -1,22 +1,22 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
+import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  LayoutDashboard,
   Filter,
   GitBranch,
   Link2,
+  LayoutGrid,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { PageHeader } from '@/components/page-header'
@@ -26,6 +26,7 @@ import { useGraphStore } from '@/store/graph-store'
 import type { GameSystem } from '@prisma/client'
 import { AddDependencyForm } from './add-dependency-form'
 import { removeDependencyAction } from '@/app/actions/dependency.actions'
+import { Skeleton } from '@/components/ui/skeleton'
 
 type SystemForPanel = {
   id: string
@@ -40,8 +41,6 @@ type SystemForPanel = {
 
 type DependenciesContentProps = {
   projectId: string
-  implementationOrder: { id: string; label: string }[]
-  hasCycles?: boolean
   edges: {
     sourceId: string
     sourceName: string
@@ -56,17 +55,26 @@ type DependenciesContentProps = {
 
 export function DependenciesContent({
   projectId,
-  implementationOrder,
-  hasCycles = false,
   edges,
   systemsForPanel,
   systems,
 }: DependenciesContentProps) {
   const selectedNodeId = useGraphStore((s) => s.selectedNodeId)
-  const { isEdgeEditMode, pendingEdgeSource, toggleEdgeEditMode } = useGraphStore()
+  const {
+    isEdgeEditMode,
+    pendingEdgeSource,
+    layoutEngine,
+    layoutEngineUsed,
+    setLayoutEngine,
+    toggleEdgeEditMode,
+  } = useGraphStore()
   const router = useRouter()
   const selectNode = useGraphStore((s) => s.selectNode)
   const [removingEdge, setRemovingEdge] = useState<string | null>(null)
+  const flowApiRef = useRef<{ fitView: () => Promise<boolean>; zoomIn: () => void; zoomOut: () => void } | null>(null)
+  const onFlowInit = useCallback((api: { fitView: () => Promise<boolean>; zoomIn: () => void; zoomOut: () => void }) => {
+    flowApiRef.current = api
+  }, [])
   const selectedSystem = selectedNodeId
     ? systemsForPanel.find((s) => s.id === selectedNodeId)
     : null
@@ -81,6 +89,7 @@ export function DependenciesContent({
     sourceId: e.sourceId,
     targetId: e.targetId,
     type: e.type,
+    description: e.description ?? null,
   }))
 
   return (
@@ -101,7 +110,7 @@ export function DependenciesContent({
                 size="icon"
                 aria-label="Zoom in"
                 title="Zoom in"
-                disabled
+                onClick={() => flowApiRef.current?.zoomIn()}
               >
                 <ZoomIn className="size-4" />
               </Button>
@@ -110,7 +119,7 @@ export function DependenciesContent({
                 size="icon"
                 aria-label="Zoom out"
                 title="Zoom out"
-                disabled
+                onClick={() => flowApiRef.current?.zoomOut()}
               >
                 <ZoomOut className="size-4" />
               </Button>
@@ -119,21 +128,35 @@ export function DependenciesContent({
                 size="icon"
                 aria-label="Fit view"
                 title="Fit all nodes in view"
-                disabled
+                onClick={() => flowApiRef.current?.fitView()}
               >
                 <Maximize2 className="size-4" />
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="secondary" size="sm" title="Graph layout direction">
-                    <LayoutDashboard className="mr-1 size-4" />
-                    Layout
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    title="Layout engine: Auto picks best; ELK or Graphviz to force one"
+                  >
+                    <LayoutGrid className="mr-1 size-4" />
+                    {layoutEngine === 'auto'
+                      ? layoutEngineUsed
+                        ? `Auto (${layoutEngineUsed})`
+                        : 'Layout'
+                      : layoutEngine}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <span className="px-2 py-1.5 text-sm text-muted-foreground">
-                    Hierarchical / Force / LTR (Phase 2)
-                  </span>
+                  <DropdownMenuItem onClick={() => setLayoutEngine('auto')}>
+                    Auto {layoutEngine === 'auto' && layoutEngineUsed && `(${layoutEngineUsed})`}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLayoutEngine('elk')}>
+                    ELK
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setLayoutEngine('graphviz')}>
+                    Graphviz
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <DropdownMenu>
@@ -187,6 +210,7 @@ export function DependenciesContent({
                 projectId={projectId}
                 systems={systemsForGraph}
                 edges={edgesForGraph}
+                onInit={onFlowInit}
                 className="min-h-0 h-full flex-1"
               />
             )}
@@ -199,52 +223,17 @@ export function DependenciesContent({
               <DependencySidePanel system={selectedSystem} projectId={projectId} />
             ) : (
               <Card>
-                <CardContent className="flex flex-col items-center justify-center text-center py-8">
-                  <p className="text-sm text-muted-foreground">
-                    Click a system in the graph or lists to view details.
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Here you&apos;ll see the system&apos;s purpose, status, and how it connects to other systems.
-                  </p>
-                  <Button variant="outline" size="sm" className="mt-4" asChild>
-                    <Link href={`/projects/${projectId}/dependencies`}>View all</Link>
-                  </Button>
+                <CardContent className="py-6 space-y-3">
+                  <Skeleton className="h-5 w-2/3" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-4/5" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
                 </CardContent>
               </Card>
             )}
           </div>
-
-          <Card>
-            <CardHeader>
-              <h2 className="text-lg font-semibold">Suggested build order</h2>
-              <p className="text-sm text-muted-foreground">
-                Computed from the graph above so systems that others depend on come first.
-              </p>
-            </CardHeader>
-            <CardContent>
-              {implementationOrder.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {hasCycles
-                    ? 'Graph contains cycles (natural for systems interaction). A single build order is not defined.'
-                    : 'No systems or no dependencies yet.'}
-                </p>
-              ) : (
-                <ol className="list-inside list-decimal space-y-1 font-mono text-sm">
-                  {implementationOrder.map(({ id, label }) => (
-                    <li key={id}>
-                      <button
-                        type="button"
-                        onClick={() => selectNode(id)}
-                        className="text-primary hover:underline"
-                      >
-                        {label}
-                      </button>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </CardContent>
-          </Card>
 
           <Card>
             <CardHeader>
@@ -257,38 +246,43 @@ export function DependenciesContent({
               {edges.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No interaction links yet.</p>
               ) : (
-                <ul className="space-y-2 text-sm">
+                <ul className="divide-y divide-border text-sm">
                   {edges.map((e) => {
                     const edgeKey = `${e.sourceId}-${e.targetId}`
                     const isRemoving = removingEdge === edgeKey
                     return (
                       <li
                         key={edgeKey}
-                        className="flex flex-wrap items-center gap-1 gap-y-0.5"
+                        className="grid grid-cols-[1fr_auto] grid-rows-[auto_auto] gap-x-3 py-3 first:pt-0 last:pb-0"
                       >
-                        <button
-                          type="button"
-                          onClick={() => selectNode(e.sourceId)}
-                          className="text-primary hover:underline"
-                        >
-                          {e.sourceName}
-                        </button>
-                        {' → '}
-                        <button
-                          type="button"
-                          onClick={() => selectNode(e.targetId)}
-                          className="text-primary hover:underline"
-                        >
-                          {e.targetName}
-                        </button>
-                        <span className="ml-1 text-muted-foreground">({e.type})</span>
-                        {e.description ? (
-                          <span className="ml-1 text-muted-foreground">— {e.description}</span>
-                        ) : null}
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => selectNode(e.sourceId)}
+                              className="text-primary hover:underline"
+                            >
+                              {e.sourceName}
+                            </button>
+                            <span className="text-muted-foreground">→</span>
+                            <button
+                              type="button"
+                              onClick={() => selectNode(e.targetId)}
+                              className="text-primary hover:underline"
+                            >
+                              {e.targetName}
+                            </button>
+                          </div>
+                          <div className="mt-0.5 text-muted-foreground">
+                            {(e.description && e.description.trim()) || (
+                              <span className="italic">— No description</span>
+                            )}
+                          </div>
+                        </div>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="ml-2 h-7 text-destructive hover:text-destructive"
+                          className="col-start-2 row-span-2 self-center h-7 text-destructive hover:text-destructive"
                           disabled={isRemoving}
                           onClick={async () => {
                             setRemovingEdge(edgeKey)

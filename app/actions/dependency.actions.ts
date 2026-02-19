@@ -9,12 +9,14 @@ export async function addDependencyAction(
   projectId: string,
   sourceSystemId: string,
   targetSystemId: string,
-  dependencyType?: string
+  dependencyType?: string,
+  description?: string | null
 ): Promise<AddDependencyResult | void> {
   const result = await dependencyService.addDependency(
     sourceSystemId,
     targetSystemId,
-    dependencyType
+    dependencyType,
+    description
   )
   if (!result.success) return { ok: false, error: result.error }
   revalidatePath(`/projects/${projectId}/dependencies`)

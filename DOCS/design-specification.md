@@ -235,12 +235,13 @@ This is a **multi-step wizard**:
 |--------------------------|------------------------------------------------------------------|
 | Interactive DAG canvas   | Zoomable, pannable, node-link diagram                            |
 | System nodes             | Colored by criticality, labeled with name + status               |
-| Dependency edges         | Directed arrows, styled by dependency type                       |
-| Selection panel          | Click a node → side panel with system summary + direct dependencies |
-| Add edge action          | Select source → target nodes, confirm                            |
-| Remove edge action       | Click edge → confirm removal                                     |
+| Dependency edges         | Right-angle (orthogonal) connectors with directional arrows; optional edge labels (description or type), multiline wrapped |
+| Selection panel          | Click a node → side panel with system summary + direct dependencies; skeleton when no selection |
+| Interaction links list   | Definition-style list (source → target, description below); Remove per link |
+| Add edge action          | Form: source, target, optional link description → add link        |
+| Remove edge action       | Per-link Remove in list (or from graph) → confirm removal        |
 | Impact analysis mode     | Toggle: highlight all downstream dependents of selected node     |
-| Layout options           | Hierarchical (top-down) / Force-directed / Left-to-right         |
+| Layout options           | Organized (group + fewer crossings); Top–down / Left–right         |
 | Mini-map                 | Corner overlay for large graphs                                  |
 | Legend                   | Color key for criticality + status                               |
 | Filter controls          | Filter by criticality, status; hide/show deprecated              |
@@ -1387,3 +1388,7 @@ All persistent data (projects, systems, brainstorms, plans, prompts) lives serve
 - 2026-02-18: §1.3.8 Review step: Finalize block above extracted systems; extracted systems as independent expandables with left handle and Added/Excluded button.
 - 2026-02-18: §4.3 Convert-suggest normalizes missing indices to discard; Extracted systems header has Add all/Exclude all, per-row Include/Exclude on far right; selection buttons vs New/Existing status badges; consistent iconography.
 - 2026-02-18: §4.3 Add all/Exclude all aligned right with same margin; system details use Include/Exclude buttons (not checkboxes); New/Existing badges use light coloring.
+- 2026-02-19: §1.3.13 Dependency Graph: edge labels, selection panel skeleton when no selection, Interaction links definition-style list, Add link form with optional description; remove Suggested build order (see edge-labels-and-visible-connections plan).
+- 2026-02-19: §1.3.13: Graph layout rebuilt with elkjs (labeled flowchart); synthesis flow now populates dependency descriptions; Interaction links list shows "— No description" when empty.
+- 2026-02-19: §1.3.13: Dependency edges specified as right-angle (orthogonal) connectors with directional arrows and multiline-wrapped labels.
+- 2026-02-19: §1.3.13: Layout options updated to Organized (group + fewer crossings) with Top–down / Left–right.

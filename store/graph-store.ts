@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 
 export type LayoutAlgorithm = 'dagre' | 'force' | 'tree'
+export type LayoutDirection = 'TB' | 'LR'
+export type LayoutMode = 'organized'
+export type LayoutEngine = 'auto' | 'elk' | 'graphviz'
 export type CriticalityFilter = 'core' | 'important' | 'later'
 export type StatusFilter = 'draft' | 'active' | 'deprecated'
 
@@ -8,6 +11,10 @@ export type GraphState = {
   selectedNodeId: string | null
   highlightedPath: string[]
   layoutAlgorithm: LayoutAlgorithm
+  layoutDirection: LayoutDirection
+  layoutEngine: LayoutEngine
+  layoutEngineUsed: 'elk' | 'graphviz' | null
+  layoutMode: LayoutMode
   criticalityFilter: CriticalityFilter[]
   statusFilter: StatusFilter[]
   isEdgeEditMode: boolean
@@ -19,6 +26,9 @@ export type GraphActions = {
   setHighlightedPath: (path: string[]) => void
   clearHighlight: () => void
   setLayout: (layout: LayoutAlgorithm) => void
+  setLayoutDirection: (direction: LayoutDirection) => void
+  setLayoutEngine: (engine: LayoutEngine) => void
+  setLayoutEngineUsed: (engine: 'elk' | 'graphviz' | null) => void
   setCriticalityFilter: (values: CriticalityFilter[]) => void
   setStatusFilter: (values: StatusFilter[]) => void
   resetFilters: () => void
@@ -31,6 +41,10 @@ const initialState: GraphState = {
   selectedNodeId: null,
   highlightedPath: [],
   layoutAlgorithm: 'dagre',
+  layoutDirection: 'TB',
+  layoutEngine: 'graphviz',
+  layoutEngineUsed: null,
+  layoutMode: 'organized',
   criticalityFilter: [],
   statusFilter: [],
   isEdgeEditMode: false,
@@ -47,6 +61,12 @@ export const useGraphStore = create<GraphState & GraphActions>((set) => ({
   clearHighlight: () => set({ highlightedPath: [] }),
 
   setLayout: (layoutAlgorithm) => set({ layoutAlgorithm }),
+
+  setLayoutDirection: (layoutDirection) => set({ layoutDirection }),
+
+  setLayoutEngine: (layoutEngine) => set({ layoutEngine, layoutEngineUsed: null }),
+
+  setLayoutEngineUsed: (layoutEngineUsed) => set({ layoutEngineUsed }),
 
   setCriticalityFilter: (criticalityFilter) => set({ criticalityFilter }),
 

@@ -16,6 +16,7 @@ export function AddDependencyForm({ projectId, systems }: Props) {
   const router = useRouter()
   const [sourceId, setSourceId] = useState('')
   const [targetId, setTargetId] = useState('')
+  const [description, setDescription] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
@@ -31,7 +32,13 @@ export function AddDependencyForm({ projectId, systems }: Props) {
       return
     }
     setPending(true)
-    const result = await addDependencyAction(projectId, sourceId, targetId)
+    const result = await addDependencyAction(
+      projectId,
+      sourceId,
+      targetId,
+      undefined,
+      description || null
+    )
     setPending(false)
     if (result?.ok === false) {
       setError(result.error)
@@ -40,6 +47,7 @@ export function AddDependencyForm({ projectId, systems }: Props) {
     router.refresh()
     setSourceId('')
     setTargetId('')
+    setDescription('')
   }
 
   const selectClass = cn(
@@ -84,6 +92,19 @@ export function AddDependencyForm({ projectId, systems }: Props) {
             </option>
           ))}
         </select>
+      </div>
+      <div className="grid flex-1 gap-2 min-w-[180px]">
+        <label htmlFor="description" className="text-sm font-medium">
+          Link description (optional)
+        </label>
+        <input
+          id="description"
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="e.g. sends encounter events"
+          className={selectClass}
+        />
       </div>
       <Button type="submit" disabled={pending}>
         {pending ? 'Adding…' : 'Add interaction link'}
