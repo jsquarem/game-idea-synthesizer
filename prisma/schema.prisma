@@ -197,11 +197,24 @@ model GameSystem {
   versionPlanItems  VersionPlanItem[]
   promptHistories   PromptHistory[]
   systemDetails     SystemDetail[]
+  evolveMessages    SystemEvolveMessage[]
 
   @@unique([projectId, systemSlug])
   @@index([projectId])
   @@index([status])
   @@index([mvpCriticality])
+}
+
+model SystemEvolveMessage {
+  id           String   @id @default(cuid())
+  gameSystemId String
+  role         String
+  content      String
+  createdAt    DateTime @default(now())
+
+  gameSystem GameSystem @relation(fields: [gameSystemId], references: [id], onDelete: Cascade)
+
+  @@index([gameSystemId])
 }
 
 model ProjectContextSnapshot {

@@ -252,7 +252,11 @@ Navigate to the **Systems** tab to see all systems for the current project.
 
 ### Viewing and Editing a System
 
-Click any system from the list to open its detail page. You can toggle between two views:
+On the **Systems** tab, systems are shown in an expandable list. Each row shows the system name, slug, purpose snippet, status, criticality, dependency count, and last updated. Expand a row to see full purpose, system details (mechanics, inputs, outputs, etc.), and an **Evolve with AI** chat panel.
+
+**Evolve with AI** lets you iterate on a system in a chat: type a request (e.g. "Add a mechanic for level-up rewards") and the AI updates the system and its details. The conversation is saved and used as context for follow-up messages. Evolve is available both in the expanded row on the Systems list and on the system's detail page.
+
+Click any system (or **Open full system**) to open its detail page. You can toggle between two views:
 
 - **Form view** -- Edit all structured fields (Name, Version, Status, Purpose, MVP Criticality). Click **Save changes** to persist edits.
 - **Markdown view** -- A read-only rendered markdown representation of the system following the standard system schema.
@@ -477,3 +481,5 @@ The goal is to go from raw brainstorm to a structured, dependency-aware implemen
 *Change log: 2026-02-18 — Synthesize flow: 3-step wizard; Review is final step with single refine form (all or selected systems), independently expandable list with Added/Excluded button per system, Finalize above list, Create selected on same step.*
 
 *Change log: 2026-02-18 — Get AI suggestion: Finalize shows "Based on N candidates, M existing systems," expandable Show prompt with copy, and AI rationale (Why) when provided.*
+
+*Change log: 2026-02-18 — Systems view: expandable list with nested system details; Evolve with AI chat (list and system detail page) for iterative refinement; conversation persisted per system.*

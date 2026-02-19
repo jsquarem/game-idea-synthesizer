@@ -3,7 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useCallback } from 'react'
 import Link from 'next/link'
-import { Search, LayoutGrid, List, Boxes } from 'lucide-react'
+import { Search, Boxes, ChevronDownIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -13,31 +13,31 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { PageHeader } from '@/components/page-header'
-import { SystemCard } from '@/components/system-card'
 import { StatusBadge } from '@/components/status-badge'
 import { CriticalityBadge } from '@/components/criticality-badge'
-import type { SystemCardSystem } from '@/components/system-card'
+import { SystemEvolveChat } from '@/components/system-evolve-chat'
+import type { GameSystemListItemWithDetails } from '@/lib/repositories/game-system.repository'
 
 type SystemsContentProps = {
   projectId: string
-  systems: SystemCardSystem[]
+  systems: GameSystemListItemWithDetails[]
   initialSearch: string
   initialStatus: string
   initialCriticality: string
-  initialView: 'grid' | 'table'
+  providerConfigs: { providerId: string; defaultModel: string | null }[]
 }
 
 function formatDate(d: Date) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'short' }).format(new Date(d))
 }
+
+const PURPOSE_SNIPPET_LEN = 120
 
 export function SystemsContent({
   projectId,
@@ -45,29 +45,26 @@ export function SystemsContent({
   initialSearch,
   initialStatus,
   initialCriticality,
-  initialView,
+  providerConfigs,
 }: SystemsContentProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [searchValue, setSearchValue] = useState(initialSearch)
-  const [view, setView] = useState<'grid' | 'table'>(initialView)
+  const [expanded, setExpanded] = useState<string[]>([])
 
   const updateParams = useCallback(
-    (updates: { search?: string; status?: string; criticality?: string; view?: 'grid' | 'table' }) => {
+    (updates: { search?: string; status?: string; criticality?: string }) => {
       const params = new URLSearchParams()
       const search = updates.search !== undefined ? updates.search : initialSearch
       const status = updates.status !== undefined ? updates.status : initialStatus
       const criticality = updates.criticality !== undefined ? updates.criticality : initialCriticality
-      const viewParam = updates.view !== undefined ? updates.view : view
       if (search) params.set('search', search)
       if (status) params.set('status', status)
       if (criticality) params.set('criticality', criticality)
-      if (viewParam === 'table') params.set('view', 'table')
       const q = params.toString()
       router.push(pathname + (q ? `?${q}` : ''))
-      if (updates.view !== undefined) setView(updates.view)
     },
-    [pathname, router, initialSearch, initialStatus, initialCriticality, view]
+    [pathname, router, initialSearch, initialStatus, initialCriticality]
   )
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -75,36 +72,18 @@ export function SystemsContent({
     updateParams({ search: searchValue.trim() || undefined })
   }
 
+  const handleSystemUpdated = useCallback(() => {
+    router.refresh()
+  }, [router])
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Systems"
         actions={
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-md border border-border p-0.5 bg-muted/50">
-              <Button
-                variant={view === 'grid' ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-7 px-2.5 text-xs"
-                onClick={() => updateParams({ view: 'grid' })}
-                aria-label="Grid view"
-              >
-                <LayoutGrid className="size-4" />
-              </Button>
-              <Button
-                variant={view === 'table' ? 'secondary' : 'ghost'}
-                size="sm"
-                className="h-7 px-2.5 text-xs"
-                onClick={() => updateParams({ view: 'table' })}
-                aria-label="Table view"
-              >
-                <List className="size-4" />
-              </Button>
-            </div>
-            <Button asChild>
-              <Link href={`/projects/${projectId}/systems/new`}>New System</Link>
-            </Button>
-          </div>
+          <Button asChild>
+            <Link href={`/projects/${projectId}/systems/new`}>New System</Link>
+          </Button>
         }
       />
 
@@ -157,53 +136,102 @@ export function SystemsContent({
             <Link href={`/projects/${projectId}/systems/new`}>New System</Link>
           </Button>
         </div>
-      ) : view === 'grid' ? (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {systems.map((system) => (
-            <li key={system.id}>
-              <SystemCard system={system} projectId={projectId} />
-            </li>
-          ))}
-        </ul>
       ) : (
-        <div className="rounded-xl border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>ID</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Criticality</TableHead>
-                <TableHead>Version</TableHead>
-                <TableHead>Dependencies</TableHead>
-                <TableHead>Updated</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {systems.map((system) => (
-                <TableRow
-                  key={system.id}
-                  className="cursor-pointer"
-                  onClick={() => router.push(`/projects/${projectId}/systems/${system.id}`)}
-                >
-                  <TableCell className="font-medium">{system.name}</TableCell>
-                  <TableCell className="font-mono text-muted-foreground">{system.systemSlug}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={system.status} />
-                  </TableCell>
-                  <TableCell>
-                    <CriticalityBadge value={system.mvpCriticality} />
-                  </TableCell>
-                  <TableCell>{system.version ?? '—'}</TableCell>
-                  <TableCell>{system.dependencyCount ?? 0}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(system.updatedAt)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <Accordion
+          type="multiple"
+          value={expanded}
+          onValueChange={setExpanded}
+          className="rounded-xl border border-border"
+        >
+          {systems.map((system) => {
+            const purposeStr = system.purpose ?? ''
+            const purposeSnippet =
+              purposeStr.length > PURPOSE_SNIPPET_LEN
+                ? purposeStr.slice(0, PURPOSE_SNIPPET_LEN) + '…'
+                : purposeStr
+            const dependencyCount = system._count?.dependsOn ?? 0
+            return (
+              <AccordionItem key={system.id} value={system.id}>
+                <AccordionTrigger className="flex min-h-[4rem] items-center gap-2 py-4 text-left hover:no-underline [&>svg]:shrink-0">
+                  <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+                  <div className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-left">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-base font-medium">{system.name}</span>
+                      <StatusBadge status={system.status} />
+                      <CriticalityBadge value={system.mvpCriticality} />
+                    </div>
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {system.systemSlug}
+                    </span>
+                    {purposeSnippet && (
+                      <span className="text-sm text-muted-foreground line-clamp-1">
+                        {purposeSnippet}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
+                    <span>{dependencyCount} dependenc{dependencyCount === 1 ? 'y' : 'ies'}</span>
+                    <span>{formatDate(system.updatedAt)}</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="border-t border-border bg-muted/20 px-4 pb-4 pt-3">
+                  <div className="space-y-4">
+                    {system.purpose && (
+                      <section>
+                        <h4 className="text-sm font-medium">Purpose</h4>
+                        <p className="mt-0.5 whitespace-pre-wrap text-sm text-muted-foreground">
+                          {system.purpose}
+                        </p>
+                      </section>
+                    )}
+                    <section>
+                      <h4 className="text-sm font-medium">System details</h4>
+                      {system.systemDetails.length === 0 ? (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          No system details yet.
+                        </p>
+                      ) : (
+                        <ul className="mt-2 space-y-2">
+                          {system.systemDetails.map((d) => (
+                            <li
+                              key={d.id}
+                              className="rounded-md border border-border/50 bg-background p-2"
+                            >
+                              <div className="mb-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <span>{d.name}</span>
+                                <span className="rounded bg-muted px-1.5 py-0.5 font-mono">
+                                  {d.detailType}
+                                </span>
+                              </div>
+                              <p className="whitespace-pre-wrap text-xs text-foreground">
+                                {d.spec || '—'}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/projects/${projectId}/systems/${system.id}`}>
+                          Open full system
+                        </Link>
+                      </Button>
+                    </div>
+                    {expanded.includes(system.id) && (
+                      <SystemEvolveChat
+                        projectId={projectId}
+                        systemId={system.id}
+                        providerConfigs={providerConfigs}
+                        onSystemUpdated={handleSystemUpdated}
+                      />
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            )
+          })}
+        </Accordion>
       )}
     </div>
   )

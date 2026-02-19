@@ -6,6 +6,7 @@ import type {
   CreateGameSystemInput,
   UpdateGameSystemInput,
   GameSystemFilter,
+  GameSystemListItemWithDetails,
 } from '../repositories/game-system.repository'
 import {
   createGameSystem,
@@ -13,6 +14,7 @@ import {
   findGameSystemById,
   getGameSystemBySlug,
   listGameSystems as listGameSystemsRepo,
+  listGameSystemsWithDetails as listGameSystemsWithDetailsRepo,
   updateGameSystem,
   deleteGameSystem as deleteGameSystemRepo,
   getGameSystemFull,
@@ -80,6 +82,24 @@ export async function listSystems(
   if (!project) return { success: false, error: 'Project not found', code: 'NOT_FOUND' }
   try {
     const result = await listGameSystemsRepo(filter, pagination)
+    return { success: true, data: result }
+  } catch (e) {
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : 'Failed to list systems',
+      code: 'INTERNAL',
+    }
+  }
+}
+
+export async function listSystemsWithDetails(
+  filter: GameSystemFilter,
+  pagination?: PaginationParams
+): Promise<ServiceResult<PaginatedResult<GameSystemListItemWithDetails>>> {
+  const project = await findProjectById(filter.projectId)
+  if (!project) return { success: false, error: 'Project not found', code: 'NOT_FOUND' }
+  try {
+    const result = await listGameSystemsWithDetailsRepo(filter, pagination)
     return { success: true, data: result }
   } catch (e) {
     return {

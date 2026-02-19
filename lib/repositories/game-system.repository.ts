@@ -66,14 +66,7 @@ export async function getGameSystemBySlug(
   })
 }
 
-export async function listGameSystems(
-  filter: GameSystemFilter,
-  pagination?: PaginationParams
-): Promise<PaginatedResult<GameSystem>> {
-  const page = pagination?.page ?? 1
-  const pageSize = pagination?.pageSize ?? DEFAULT_PAGE_SIZE
-  const skip = (page - 1) * pageSize
-
+const buildListWhere = (filter: GameSystemFilter) => {
   const where: {
     projectId: string
     status?: string
@@ -89,6 +82,30 @@ export async function listGameSystems(
       { purpose: { contains: filter.search } },
     ]
   }
+  return where
+}
+
+export type SystemDetailStub = {
+  id: string
+  name: string
+  detailType: string
+  spec: string
+  sortOrder: number
+}
+
+export type GameSystemListItemWithDetails = GameSystem & {
+  _count: { dependsOn: number }
+  systemDetails: SystemDetailStub[]
+}
+
+export async function listGameSystems(
+  filter: GameSystemFilter,
+  pagination?: PaginationParams
+): Promise<PaginatedResult<GameSystem>> {
+  const page = pagination?.page ?? 1
+  const pageSize = pagination?.pageSize ?? DEFAULT_PAGE_SIZE
+  const skip = (page - 1) * pageSize
+  const where = buildListWhere(filter)
 
   const [data, total] = await Promise.all([
     prisma.gameSystem.findMany({
@@ -100,6 +117,64 @@ export async function listGameSystems(
     }),
     prisma.gameSystem.count({ where }),
   ])
+
+  return {
+    data,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize) || 1,
+  }
+}
+
+export async function listGameSystemsWithDetails(
+  filter: GameSystemFilter,
+  pagination?: PaginationParams
+): Promise<PaginatedResult<GameSystemListItemWithDetails>> {
+  const page = pagination?.page ?? 1
+  const pageSize = pagination?.pageSize ?? DEFAULT_PAGE_SIZE
+  const skip = (page - 1) * pageSize
+  const where = buildListWhere(filter)
+
+  const [systems, total, allDetails] = await Promise.all([
+    prisma.gameSystem.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { name: 'asc' },
+      include: { _count: { select: { dependsOn: true } } },
+    }),
+    prisma.gameSystem.count({ where }),
+    prisma.gameSystem.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { name: 'asc' },
+      select: { id: true },
+    }).then((ids) =>
+      ids.length === 0
+        ? []
+        : prisma.systemDetail.findMany({
+            where: { gameSystemId: { in: ids.map((s) => s.id) } },
+            orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+            select: { gameSystemId: true, id: true, name: true, detailType: true, spec: true, sortOrder: true },
+          })
+    ),
+  ])
+
+  const detailsBySystemId = new Map<string, SystemDetailStub[]>()
+  for (const d of allDetails) {
+    const list = detailsBySystemId.get(d.gameSystemId) ?? []
+    list.push({ id: d.id, name: d.name, detailType: d.detailType, spec: d.spec, sortOrder: d.sortOrder })
+    detailsBySystemId.set(d.gameSystemId, list)
+  }
+
+  const data: GameSystemListItemWithDetails[] = systems.map(
+    (s: GameSystem & { _count: { dependsOn: number } }) => ({
+      ...s,
+      systemDetails: detailsBySystemId.get(s.id) ?? [],
+    })
+  )
 
   return {
     data,
