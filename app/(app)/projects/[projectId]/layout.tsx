@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { findProjectById } from '@/lib/repositories/project.repository'
 import { ProjectSidebar } from '@/components/project-sidebar'
 import { SetProjectBreadcrumb } from '@/components/set-project-breadcrumb'
+import { ProjectContentArea } from './project-content-area'
 import { ProjectContentWrapper } from './project-content-wrapper'
 
 export default async function ProjectLayout({
@@ -16,12 +17,12 @@ export default async function ProjectLayout({
   if (!project) notFound()
 
   return (
-    <div className="flex flex-1 flex-col md:flex-row">
+    <div className="flex min-h-[calc(100vh-3.5rem)] flex-1 flex-col md:flex-row md:h-[calc(100vh-3.5rem)]">
       <SetProjectBreadcrumb projectId={projectId} projectName={project.name} />
       <ProjectSidebar projectId={projectId} />
-      <div className="min-w-0 flex-1 overflow-y-auto px-4 py-6 md:px-8 lg:px-10">
+      <ProjectContentArea>
         <ProjectContentWrapper>{children}</ProjectContentWrapper>
-      </div>
+      </ProjectContentArea>
     </div>
   )
 }

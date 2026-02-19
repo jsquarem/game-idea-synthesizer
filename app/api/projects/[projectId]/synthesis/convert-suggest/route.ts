@@ -37,6 +37,7 @@ export async function POST(
   })
 
   if (!result.success) {
+    console.error('[convert-suggest]', result.error)
     return NextResponse.json(
       { error: result.error },
       { status: 400 }

@@ -30,7 +30,7 @@ type SystemsContentProps = {
   initialSearch: string
   initialStatus: string
   initialCriticality: string
-  providerConfigs: { providerId: string; defaultModel: string | null }[]
+  providerConfigs: { providerId: string; defaultModel: string | null; availableModels?: string[] }[]
 }
 
 function formatDate(d: Date) {

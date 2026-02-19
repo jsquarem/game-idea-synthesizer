@@ -9,6 +9,8 @@ export type CreateSynthesizedOutputInput = {
   content: string
   extractedSystems: object[]
   extractedSystemDetails?: object[]
+  suggestedSystems?: object[]
+  suggestedSystemDetails?: object[]
   aiProvider?: string
   aiModel?: string
   promptTokens?: number
@@ -20,6 +22,8 @@ export type UpdateSynthesizedOutputInput = {
   content?: string
   extractedSystems?: object[]
   extractedSystemDetails?: object[]
+  suggestedSystems?: object[]
+  suggestedSystemDetails?: object[]
 }
 
 export async function createSynthesizedOutput(
@@ -34,6 +38,12 @@ export async function createSynthesizedOutput(
       extractedSystems: JSON.stringify(data.extractedSystems),
       extractedSystemDetails: data.extractedSystemDetails
         ? JSON.stringify(data.extractedSystemDetails)
+        : undefined,
+      suggestedSystems: data.suggestedSystems
+        ? JSON.stringify(data.suggestedSystems)
+        : undefined,
+      suggestedSystemDetails: data.suggestedSystemDetails
+        ? JSON.stringify(data.suggestedSystemDetails)
         : undefined,
       aiProvider: data.aiProvider,
       aiModel: data.aiModel,
@@ -96,6 +106,8 @@ export async function updateSynthesizedOutput(
     content?: string
     extractedSystems?: string
     extractedSystemDetails?: string
+    suggestedSystems?: string
+    suggestedSystemDetails?: string
   } = {}
   if (data.status !== undefined) update.status = data.status
   if (data.content !== undefined) update.content = data.content
@@ -103,6 +115,10 @@ export async function updateSynthesizedOutput(
     update.extractedSystems = JSON.stringify(data.extractedSystems)
   if (data.extractedSystemDetails !== undefined)
     update.extractedSystemDetails = JSON.stringify(data.extractedSystemDetails)
+  if (data.suggestedSystems !== undefined)
+    update.suggestedSystems = JSON.stringify(data.suggestedSystems)
+  if (data.suggestedSystemDetails !== undefined)
+    update.suggestedSystemDetails = JSON.stringify(data.suggestedSystemDetails)
   return prisma.synthesizedOutput.update({ where: { id }, data: update })
 }
 

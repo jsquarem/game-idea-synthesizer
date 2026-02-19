@@ -7,6 +7,7 @@ import {
   listProjects as listProjectsRepo,
   updateProject as updateProjectRepo,
   deleteProject as deleteProjectRepo,
+  clearProjectData as clearProjectDataRepo,
   getProjectSummary,
 } from '../repositories/project.repository'
 import type {
@@ -88,6 +89,21 @@ export async function deleteProject(id: string): Promise<ServiceResult<void>> {
     return {
       success: false,
       error: e instanceof Error ? e.message : 'Failed to delete project',
+      code: 'INTERNAL',
+    }
+  }
+}
+
+export async function clearProjectData(projectId: string): Promise<ServiceResult<void>> {
+  const existing = await findProjectById(projectId)
+  if (!existing) return { success: false, error: 'Project not found', code: 'NOT_FOUND' }
+  try {
+    await clearProjectDataRepo(projectId)
+    return { success: true, data: undefined }
+  } catch (e) {
+    return {
+      success: false,
+      error: e instanceof Error ? e.message : 'Failed to clear project data',
       code: 'INTERNAL',
     }
   }

@@ -2,6 +2,7 @@ import type { GameSystem, Dependency } from '@prisma/client'
 import { getSynthesizedOutputById } from '@/lib/repositories/synthesized-output.repository'
 import { createGameSystem, getGameSystemBySlug, findGameSystemById, getAllGameSystems } from '@/lib/repositories/game-system.repository'
 import { createManySystemDetails } from '@/lib/repositories/system-detail.repository'
+import { listDependenciesByProject } from '@/lib/repositories/dependency.repository'
 import { addDependency } from '@/lib/services/dependency.service'
 import type { ExtractedSystemStub, ExtractedSystemDetailStub } from '@/lib/ai/parse-synthesis-response'
 
@@ -16,7 +17,7 @@ export type CandidateSelection = {
 export type ConvertSynthesisInput = {
   outputId: string
   selections: CandidateSelection[]
-  dependencyEdges: { sourceSlug: string; targetSlug: string }[]
+  dependencyEdges: { sourceSlug: string; targetSlug: string; description?: string }[]
 }
 
 export type ConvertSynthesisResult = {
@@ -25,6 +26,7 @@ export type ConvertSynthesisResult = {
   createdSystems?: GameSystem[]
   createdDependencies?: Dependency[]
   cycleError?: string
+  cycleEdge?: { sourceSlug: string; targetSlug: string }
 }
 
 function slugify(name: string): string {
@@ -50,7 +52,7 @@ export async function suggestSlugForNewSystem(
 
 /**
  * Convert synthesis output to GameSystems, SystemDetails, and Dependencies.
- * Uses cycle check for dependencies; returns cycleError if any edge would create a cycle.
+ * Cycles are allowed (natural for systems interaction flow).
  */
 export async function convertSynthesisToSystems(
   input: ConvertSynthesisInput
@@ -125,17 +127,13 @@ export async function convertSynthesisToSystems(
     const sourceId = slugToId.get(edge.sourceSlug)
     const targetId = slugToId.get(edge.targetSlug)
     if (!sourceId || !targetId) continue
-    const result = await addDependency(sourceId, targetId)
+    const result = await addDependency(
+      sourceId,
+      targetId,
+      undefined,
+      edge.description ?? null
+    )
     if (result.success && result.data) createdDependencies.push(result.data)
-    if (!result.success && result.code === 'CYCLE_DETECTED') {
-      return {
-        success: false,
-        error: result.error,
-        cycleError: result.error,
-        createdSystems,
-        createdDependencies,
-      }
-    }
   }
 
   return {

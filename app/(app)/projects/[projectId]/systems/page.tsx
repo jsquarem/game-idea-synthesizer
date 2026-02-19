@@ -1,6 +1,7 @@
 import { listSystemsWithDetails } from '@/lib/services/game-system.service'
 import { findProjectById } from '@/lib/repositories/project.repository'
 import { listWorkspaceAiConfigs } from '@/lib/repositories/workspace-ai-config.repository'
+import { parseAvailableModels } from '@/lib/ai/list-models'
 import { notFound } from 'next/navigation'
 import { SystemsContent } from './systems-content'
 
@@ -35,8 +36,9 @@ export default async function SystemsListPage({ params, searchParams }: PageProp
       ? aiConfigs.map((c) => ({
           providerId: c.providerId,
           defaultModel: c.defaultModel ?? 'gpt-4o-mini',
+          availableModels: parseAvailableModels(c.availableModels),
         }))
-      : [{ providerId: 'openai', defaultModel: 'gpt-4o-mini' }]
+      : [{ providerId: 'openai', defaultModel: 'gpt-4o-mini', availableModels: [] }]
 
   return (
     <SystemsContent

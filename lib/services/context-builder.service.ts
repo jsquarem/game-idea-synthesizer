@@ -265,18 +265,55 @@ export async function buildDeltaSinceSnapshot(
   )
 }
 
-const EXTRACTION_INSTRUCTIONS = `You must identify game systems AND their system details from the context and new brainstorm. Respond with ONLY a single JSON object (no markdown, no code fence, no explanation). The JSON must have exactly two keys:
+const EXTRACTION_INSTRUCTIONS = `You must identify game systems AND their system details from the context and new brainstorm. Respond with ONLY a single JSON object (no markdown, no code fence, no explanation). Do not repeat or include the example below; output only your extraction. The JSON must have at least these two keys; optional keys for gap-filling:
 
-1. "extractedSystems": array of objects. Each has: name, systemSlug (lowercase-with-hyphens), purpose (one short sentence), dependencies (array of other system slugs, optional).
+1. "extractedSystems": array of objects. Each has: name, systemSlug (lowercase-with-hyphens), purpose (one short sentence), dependencies (array of other system slugs this system depends on or interfaces with—who calls whom, who feeds whom; may be empty).
 2. "extractedSystemDetails": array of objects. Each has: name, detailType (exactly one of: mechanic, input, output, content, ui_hint), spec (markdown string describing the system detail), targetSystemSlug (must match the systemSlug of the system this detail belongs to).
+
+If a system would have no dependencies (solo system), that often indicates a gap—a missing system this one should depend on or be depended on by. In that case, add one or more systems to the optional "suggestedSystems" array (same shape as extractedSystems) and add suggested system details to the optional "suggestedSystemDetails" array (same shape as extractedSystemDetails; use targetSystemSlug to attach details to a suggested system). Make the originally-solo extracted system depend on the suggested system's slug or vice versa.
 
 Rules:
 - Every system you list MUST have at least one system detail in extractedSystemDetails. Use targetSystemSlug on each detail to attach it to a system (use the exact systemSlug value).
+- Optional "suggestedSystems" and "suggestedSystemDetails": when you identify a system with no dependencies, suggest new system(s) that would fill the gap and list them here; then give the solo system a dependency on the suggested system's slug.
 - The main definition of each system is its system details—break down mechanics, inputs, outputs, and UI/content into separate details rather than putting everything in purpose.
+- Produce one system per major interface boundary so the result can be visualized as a systems interaction flowchart (e.g. Guild Management, Quest Selection, Combat/Encounters, Behavior Trees, Roles, Heroes/Units, Player Intervention, AI Learning, Boss/Encounter Mechanics, Reputation, Resource Production, Hero Training Upgrades as distinct systems where the design implies them).
+- Set dependencies to reflect interaction flow: for each system, list the slugs of systems it interfaces with or uses (data flow, triggers, "A sends to B"). This drives the dependency graph used for the flowchart. The graph is used to show what systems interact with which and how; describe interaction flow clearly in purpose or system details so it can be visualized.
+- Use the dependency graph in the project context when existing systems are present. When proposing new systems, set dependencies so the graph shows how systems connect.
 - Fit new ideas into existing systems where appropriate; suggest new systems when needed.
 
-Example shape (replace with real content from the brainstorm):
-{"extractedSystems":[{"name":"Combat Model","systemSlug":"combat-model","purpose":"Handles auto-battle and player intervention.","dependencies":[]}],"extractedSystemDetails":[{"name":"Auto-battle resolution","detailType":"mechanic","spec":"Resolves turns when in autoplay; uses role and stats.","targetSystemSlug":"combat-model"},{"name":"Player takeover","detailType":"input","spec":"Player can take control of any hero at any time.","targetSystemSlug":"combat-model"}]}`
+Example shape (replace with real content; suggestedSystems and suggestedSystemDetails are optional and may be empty arrays if no gap):
+{
+  "extractedSystems": [
+    {
+      "name": "Quest Selection",
+      "systemSlug": "quest-selection",
+      "purpose": "Chooses which dungeons or objectives the guild pursues.",
+      "dependencies": ["combat-encounters"]
+    },
+    {
+      "name": "Combat / Encounters",
+      "systemSlug": "combat-encounters",
+      "purpose": "Runs dungeon rooms and combat; hosts bosses and heroes.",
+      "dependencies": ["reputation", "heroes-units"]
+    }
+  ],
+  "extractedSystemDetails": [
+    {
+      "name": "Dungeon selection",
+      "detailType": "mechanic",
+      "spec": "Selects next dungeon or objective from guild.",
+      "targetSystemSlug": "quest-selection"
+    },
+    {
+      "name": "Encounter resolution",
+      "detailType": "mechanic",
+      "spec": "Resolves combat and encounter events.",
+      "targetSystemSlug": "combat-encounters"
+    }
+  ],
+  "suggestedSystems": [],
+  "suggestedSystemDetails": []
+}`
 
 /**
  * Assemble for synthesis: last snapshot content + delta + new brainstorm + instructions.

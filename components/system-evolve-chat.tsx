@@ -8,11 +8,20 @@ import { MessageSquare, Send, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import {
+  groupAndSortModels,
+  getModelDescription,
+  resolveSuggestedModel,
+} from '@/lib/utils/group-models-for-select'
 
 type SystemEvolveChatProps = {
   projectId: string
   systemId: string
-  providerConfigs: { providerId: string; defaultModel: string | null }[]
+  providerConfigs: {
+    providerId: string
+    defaultModel: string | null
+    availableModels?: string[]
+  }[]
   onSystemUpdated?: () => void
   /** If false, messages are not fetched until needed (e.g. when parent expands) */
   fetchMessagesOnMount?: boolean
@@ -31,8 +40,16 @@ export function SystemEvolveChat({
   const [error, setError] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
   const router = useRouter()
-  const providerId = providerConfigs[0]?.providerId ?? 'openai'
-  const model = providerConfigs[0]?.defaultModel ?? undefined
+  const firstProvider = providerConfigs[0]
+  const providerId = firstProvider?.providerId ?? 'openai'
+  const defaultModel = firstProvider?.defaultModel ?? undefined
+  const availableModels = firstProvider?.availableModels ?? []
+  const suggestedModel = resolveSuggestedModel(providerId, availableModels)
+  const [model, setModel] = useState<string | undefined>(
+    defaultModel ?? suggestedModel ?? (availableModels[0] ?? undefined)
+  )
+  const effectiveModel =
+    model ?? defaultModel ?? suggestedModel ?? availableModels[0]
 
   useEffect(() => {
     if (!fetchMessagesOnMount || loaded) return
@@ -63,7 +80,7 @@ export function SystemEvolveChat({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             providerId,
-            model: model || undefined,
+            model: effectiveModel || undefined,
             userMessage: text,
             messages,
           }),
@@ -89,14 +106,38 @@ export function SystemEvolveChat({
     } finally {
       setLoading(false)
     }
-  }, [projectId, systemId, providerId, model, input, messages, loading, onSystemUpdated])
+  }, [projectId, systemId, providerId, effectiveModel, input, messages, loading, onSystemUpdated, router])
 
   return (
     <div className="space-y-3 rounded-md border border-border bg-muted/20 p-3">
-      <h4 className="flex items-center gap-1.5 text-sm font-medium">
-        <MessageSquare className="size-3.5 shrink-0" aria-hidden />
-        Evolve with AI
-      </h4>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h4 className="flex items-center gap-1.5 text-sm font-medium">
+          <MessageSquare className="size-3.5 shrink-0" aria-hidden />
+          Evolve with AI
+        </h4>
+        {availableModels.length > 0 && (
+          <select
+            className="rounded border border-input bg-background px-2 py-1 text-xs"
+            value={effectiveModel ?? ''}
+            onChange={(e) => setModel(e.target.value || undefined)}
+          >
+            {groupAndSortModels(availableModels).map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.models.map((id) => (
+                  <option
+                    key={id}
+                    value={id}
+                    title={getModelDescription(providerId, id) ?? undefined}
+                  >
+                    {id}
+                    {suggestedModel === id ? ' — Suggested' : ''}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        )}
+      </div>
       {error && (
         <p className="text-sm text-destructive">{error}</p>
       )}

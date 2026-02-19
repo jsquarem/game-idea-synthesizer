@@ -41,6 +41,7 @@ model WorkspaceAiConfig {
   encryptedApiKey  String
   baseUrl          String?
   defaultModel     String?
+  availableModels  String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -134,6 +135,8 @@ model SynthesizedOutput {
   content              String
   extractedSystems     String
   extractedSystemDetails String?
+  suggestedSystems     String?
+  suggestedSystemDetails String?
   status               String   @default("pending")
   aiProvider           String?
   aiModel              String?

@@ -817,8 +817,9 @@ export async function deletePromptHistory(id: string): Promise<void>
 Workspace is a first-class entity; projects may be scoped to a workspace. Workspace members can manage membership and workspace-scoped AI provider config.
 
 - **`lib/repositories/workspace.repository.ts`**: `findWorkspaceById`, `getOrCreateDefaultWorkspace`, `listWorkspaceMembers`, `listAllUsers`, `isWorkspaceMember`, `addWorkspaceMember`.
-- **`lib/repositories/workspace-ai-config.repository.ts`**: `findWorkspaceAiConfig`, `listWorkspaceAiConfigs`, `upsertWorkspaceAiConfig`. Stores per-workspace, per-provider config; API key is stored only in encrypted form (see below).
+- **`lib/repositories/workspace-ai-config.repository.ts`**: `findWorkspaceAiConfig`, `listWorkspaceAiConfigs`, `upsertWorkspaceAiConfig`, `updateWorkspaceAiConfigAvailableModels`. Stores per-workspace, per-provider config (API key encrypted; optional `availableModels` JSON array of model IDs for UI dropdowns).
 - **`lib/ai/get-workspace-provider-config.ts`**: `getDecryptedWorkspaceProviderConfig(workspaceId, providerId)` returns decrypted config for use at AI call sites. Server-only; never expose decrypted keys to the client.
+- **`lib/ai/list-models.ts`**: `listModelsForProvider(providerId, config)` fetches model IDs from provider APIs (OpenAI GET /v1/models, Anthropic GET /v1/models); used when saving config or refreshing models. `parseAvailableModels(json)` parses stored JSON for consumer UIs. Model descriptions and grouping for UI are curated client-side in `lib/utils/group-models-for-select.ts` and `lib/utils/model-descriptions.ts` (provider list APIs do not return descriptions).
 
 **Encrypted secret storage (prototype):**
 
@@ -3146,3 +3147,5 @@ docs/
 ## Change Log
 
 - 2026-02-17: Draft v1.0; schema, repositories, services, parsers, workspace and AI config.
+- 2026-02-19: WorkspaceAiConfig.availableModels; list-models module for OpenAI/Anthropic; model options used app-wide (Settings, Synthesize, System evolve).
+- 2026-02-19: Model grouping, descriptions (curated map from OpenAI docs), and suggested model (price-sensitive) in lib/utils; Settings full-width 3-column layout with grouped model list; Synthesize/Evolve dropdowns keep descriptions and Suggested label.

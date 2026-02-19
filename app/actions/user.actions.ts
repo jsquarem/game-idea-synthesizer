@@ -8,6 +8,7 @@ import {
   updateUserDisplayName,
   updateUserAvatarColor,
 } from '@/lib/repositories/user.repository'
+import { getOrCreateDefaultWorkspace } from '@/lib/repositories/workspace.repository'
 import { isAllowedAvatarColor } from '@/lib/avatar'
 import { revalidatePath } from 'next/cache'
 
@@ -66,6 +67,7 @@ export async function createUserAction(
     return { success: false, error: 'Name must be at most 100 characters' }
   try {
     const user = await createUser({ displayName: name })
+    await getOrCreateDefaultWorkspace(user.id)
     revalidatePath('/settings')
     revalidatePath('/dashboard')
     return { success: true, userId: user.id }

@@ -20,3 +20,16 @@ export async function addDependencyAction(
   revalidatePath(`/projects/${projectId}/dependencies`)
   revalidatePath(`/projects/${projectId}/overview`)
 }
+
+export type RemoveDependencyResult = { ok: true } | { ok: false; error: string }
+
+export async function removeDependencyAction(
+  projectId: string,
+  sourceSystemId: string,
+  targetSystemId: string
+): Promise<RemoveDependencyResult | void> {
+  const result = await dependencyService.removeDependency(sourceSystemId, targetSystemId)
+  if (!result.success) return { ok: false, error: result.error }
+  revalidatePath(`/projects/${projectId}/dependencies`)
+  revalidatePath(`/projects/${projectId}/overview`)
+}

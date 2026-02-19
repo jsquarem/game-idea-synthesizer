@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { getSystem } from '@/lib/services/game-system.service'
 import { findProjectById } from '@/lib/repositories/project.repository'
 import { listWorkspaceAiConfigs } from '@/lib/repositories/workspace-ai-config.repository'
+import { parseAvailableModels } from '@/lib/ai/list-models'
 import { updateSystemAction, deleteSystemAction } from '@/app/actions/game-system.actions'
 import { SystemForm } from './system-form'
 import { SystemViewToggle } from './system-view-toggle'
@@ -36,8 +37,9 @@ export default async function SystemDetailPage({
       ? aiConfigs.map((c) => ({
           providerId: c.providerId,
           defaultModel: c.defaultModel ?? 'gpt-4o-mini',
+          availableModels: parseAvailableModels(c.availableModels),
         }))
-      : [{ providerId: 'openai', defaultModel: 'gpt-4o-mini' }]
+      : [{ providerId: 'openai', defaultModel: 'gpt-4o-mini', availableModels: [] }]
 
   const dependencyPanelSystem = {
     id: system.id,

@@ -101,7 +101,7 @@ export async function runSynthesisStream(
       providerId: input.providerId,
       prompt: fullPrompt,
       model: input.model,
-      maxTokens: 8192,
+      maxTokens: 10240,
     })) {
       if (chunk.type === 'text') {
         fullContent += chunk.text
@@ -125,6 +125,9 @@ export async function runSynthesisStream(
     content: fullContent,
     extractedSystems: parsed.extractedSystems,
     extractedSystemDetails: parsed.extractedSystemDetails,
+    suggestedSystems: parsed.suggestedSystems?.length ? parsed.suggestedSystems : undefined,
+    suggestedSystemDetails:
+      parsed.suggestedSystemDetails?.length ? parsed.suggestedSystemDetails : undefined,
     aiProvider: input.providerId,
     aiModel: input.model ?? undefined,
     promptTokens: promptTokens || undefined,

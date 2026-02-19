@@ -26,12 +26,48 @@ export type ExtractedSystemDetailStub = {
 export type ParsedSynthesis = {
   extractedSystems: ExtractedSystemStub[]
   extractedSystemDetails: ExtractedSystemDetailStub[]
+  suggestedSystems?: ExtractedSystemStub[]
+  suggestedSystemDetails?: ExtractedSystemDetailStub[]
   rawContent: string
 }
 
 const JSON_BLOCK_REGEX = /```(?:json)?\s*([\s\S]*?)```/
 const EXTRACTED_SYSTEMS_REGEX = /"extractedSystems"\s*:\s*(\[[\s\S]*?\])\s*[,}]/
 const EXTRACTED_SYSTEM_DETAILS_REGEX = /"extractedSystemDetails"\s*:\s*(\[[\s\S]*?\])\s*[,}]/
+
+/**
+ * Find the end index of the first complete JSON object starting at start (bracket-matched).
+ * Returns -1 if no object found. Respects strings so braces inside strings don't affect depth.
+ */
+function findJsonObjectEnd(jsonStr: string, start: number): number {
+  let depth = 0
+  let inDoubleQuote = false
+  let i = start
+  while (i < jsonStr.length) {
+    const c = jsonStr[i]
+    if (inDoubleQuote) {
+      if (c === '\\') {
+        i += 2
+        continue
+      }
+      if (c === '"') inDoubleQuote = false
+      i++
+      continue
+    }
+    if (c === '"') {
+      inDoubleQuote = true
+      i++
+      continue
+    }
+    if (c === '{' || c === '[') depth++
+    else if (c === '}' || c === ']') {
+      depth--
+      if (depth === 0) return i
+    }
+    i++
+  }
+  return -1
+}
 
 function tryParseJsonObject(str: string): Record<string, unknown> | null {
   let jsonStr = str.trim()
@@ -44,46 +80,37 @@ function tryParseJsonObject(str: string): Record<string, unknown> | null {
       ? (parsed as Record<string, unknown>)
       : null
   } catch {
-    // Fallback: find first { and bracket-match to get a single JSON object (handles preamble text)
-    const start = jsonStr.indexOf('{')
-    if (start === -1) return null
-    let depth = 0
-    let inDoubleQuote = false
-    let i = start
-    while (i < jsonStr.length) {
-      const c = jsonStr[i]
-      if (inDoubleQuote) {
-        if (c === '\\') {
-          i += 2
-          continue
-        }
-        if (c === '"') inDoubleQuote = false
-        i++
-        continue
-      }
-      if (c === '"') {
-        inDoubleQuote = true
-        i++
-        continue
-      }
-      if (c === '{' || c === '[') depth++
-      else if (c === '}' || c === ']') {
-        depth--
-        if (depth === 0) {
-          try {
-            const parsed = JSON.parse(jsonStr.slice(start, i + 1)) as unknown
-            return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
-              ? (parsed as Record<string, unknown>)
-              : null
-          } catch {
-            return null
+    // Fallback: find all top-level JSON objects (handles "example}, {real" when model echoes example then responds)
+    let best: Record<string, unknown> | null = null
+    let bestSystemCount = 0
+    let searchStart = 0
+    for (;;) {
+      const start = jsonStr.indexOf('{', searchStart)
+      if (start === -1) break
+      const end = findJsonObjectEnd(jsonStr, start)
+      if (end === -1) break
+      try {
+        const parsed = JSON.parse(jsonStr.slice(start, end + 1)) as unknown
+        if (
+          typeof parsed === 'object' &&
+          parsed !== null &&
+          !Array.isArray(parsed) &&
+          Array.isArray((parsed as Record<string, unknown>).extractedSystems)
+        ) {
+          const obj = parsed as Record<string, unknown>
+          const count = (obj.extractedSystems as unknown[]).length
+          if (count >= bestSystemCount) {
+            bestSystemCount = count
+            best = obj
           }
         }
+      } catch {
+        // skip invalid slice
       }
-      i++
+      searchStart = end + 1
     }
+    return best
   }
-  return null
 }
 
 function extractArrayWithRegex(
@@ -113,9 +140,27 @@ export function parseSynthesisResponse(content: string): ParsedSynthesis {
     const details = Array.isArray(obj.extractedSystemDetails)
       ? (obj.extractedSystemDetails as ExtractedSystemDetailStub[])
       : []
-    return { extractedSystems: systems, extractedSystemDetails: details, rawContent: content }
+    const suggested = Array.isArray(obj.suggestedSystems)
+      ? (obj.suggestedSystems as ExtractedSystemStub[])
+      : []
+    const suggestedDetails = Array.isArray(obj.suggestedSystemDetails)
+      ? (obj.suggestedSystemDetails as ExtractedSystemDetailStub[])
+      : []
+    return {
+      extractedSystems: systems,
+      extractedSystemDetails: details,
+      suggestedSystems: suggested,
+      suggestedSystemDetails: suggestedDetails,
+      rawContent: content,
+    }
   }
   const systems = extractArrayWithRegex(content, EXTRACTED_SYSTEMS_REGEX) as ExtractedSystemStub[]
   const details = extractArrayWithRegex(content, EXTRACTED_SYSTEM_DETAILS_REGEX) as ExtractedSystemDetailStub[]
-  return { extractedSystems: systems, extractedSystemDetails: details, rawContent: content }
+  return {
+    extractedSystems: systems,
+    extractedSystemDetails: details,
+    suggestedSystems: [],
+    suggestedSystemDetails: [],
+    rawContent: content,
+  }
 }

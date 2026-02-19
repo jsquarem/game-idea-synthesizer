@@ -16,11 +16,11 @@ Provides a first-class workspace entity that scopes projects, membership, and wo
 - Add-member: userId to add
 - Create user: display name (from Settings; creates new AppUser)
 - Switch user: selected userId + explicit confirmation (sets browser-scoped cookie for prototype)
-- AI config: providerId, apiKey (plaintext only at input; stored encrypted), baseUrl, defaultModel
+- AI config: providerId, apiKey (plaintext only at input; stored encrypted), baseUrl, defaultModel; optional availableModels (JSON array of model IDs, populated after save or “Refresh models”)
 
 ## Outputs
 - Workspace and membership records
-- Encrypted WorkspaceAiConfig records (API key never stored in plaintext)
+- Encrypted WorkspaceAiConfig records (API key never stored in plaintext); availableModels stored per provider for model dropdowns app-wide
 - Decrypted provider config only at server call sites that need it (e.g. AI engine)
 
 ## Dependencies
@@ -33,12 +33,14 @@ Provides a first-class workspace entity that scopes projects, membership, and wo
 - Repositories: `lib/repositories/workspace.repository.ts`, `lib/repositories/workspace-ai-config.repository.ts`
 - Security: `lib/security/encryption.ts` (encryptSecret, decryptSecret)
 - Config consumption: `lib/ai/get-workspace-provider-config.ts` (getDecryptedWorkspaceProviderConfig)
-- Actions: `app/actions/workspace.actions.ts`, `app/actions/workspace-ai-config.actions.ts`, `app/actions/user.actions.ts` (createUserAction, switchCurrentUserAction)
+- List models (server-only): `lib/ai/list-models.ts` (listModelsForProvider, parseAvailableModels); used when saving config or refreshing models
+- Model grouping and descriptions (client-side): `lib/utils/group-models-for-select.ts` (groupAndSortModels, getModelDescription, resolveSuggestedModel), `lib/utils/model-descriptions.ts` (curated descriptions; provider APIs do not return them)
+- Actions: `app/actions/workspace.actions.ts`, `app/actions/workspace-ai-config.actions.ts` (saveWorkspaceAiConfigAction, refreshWorkspaceModelsAction), `app/actions/user.actions.ts` (createUserAction, switchCurrentUserAction)
 - UI: `app/(app)/settings/` — Profile card (avatar, display name); Workspace card (members/add-member, AI config); Prototype card (active-user selector + “Use this user in this browser” button, create-user form)
 
 ## Current Implementation (prototype)
 - Single default workspace created on first use; default user is added as member.
-- Settings: **Profile** card — avatar color and display name. **Workspace** card — members list and add-member, plus AI provider (OpenAI, Anthropic) with API key (masked), optional base URL and default model; keys encrypted before persistence, decryption only in server runtime. **Prototype: user simulation** card — (1) **Active user (this browser)** — select a user from dropdown, then click “Use this user in this browser” to set the `gameplan-user-id` cookie for this browser only; (2) **Create user** — name field creates a new AppUser (no cookie change); new users appear in the selector and can be added to the workspace. Create and switch are for prototyping only.
+- Settings: **Profile** card — avatar color and display name. **Workspace** card — members list and add-member, plus AI provider (OpenAI, Anthropic) with API key (masked), optional base URL and default model; after saving an API key, available models are fetched and stored; default model is chosen from a grouped list (3-column layout; descriptions and Suggested badge) (or “Other” for a custom ID); “Refresh models” button refetches the list when key exists. Model list is reused in Synthesize wizard and System evolve as model options. **Prototype: user simulation** card — (1) **Active user (this browser)** — select a user from dropdown, then click “Use this user in this browser” to set the `gameplan-user-id` cookie for this browser only; (2) **Create user** — name field creates a new AppUser (no cookie change); new users appear in the selector and can be added to the workspace. Create and switch are for prototyping only.
 - No auth layer yet; membership and “current user” are prototype mechanisms (e.g. cookie-based user id). Design assumes auth will be added later without changing “encrypt at rest, decrypt only server-side” semantics.
 
 ## Security: prototype vs production
@@ -60,3 +62,5 @@ Provides a first-class workspace entity that scopes projects, membership, and wo
 - 2026-02-17: Initial workspace model, membership, encrypted AI config, settings User/Workspace panels.
 - 2026-02-17: Add Settings create-user form and switch-user dropdown for prototype testing.
 - 2026-02-17: Settings restructure into Profile, Workspace, Prototype cards; workspace members in Workspace section; active user set via explicit “Use this user in this browser” button; create-user is create-only (no auto-switch).
+- 2026-02-19: Available models fetched on save/refresh and stored on WorkspaceAiConfig; default model dropdown and Refresh models in Settings; same model options used in Synthesize wizard and System evolve.
+- 2026-02-19: Settings AI config: full-width 3-column layout with grouped model list (no dropdown); model descriptions from curated map (lib/utils/model-descriptions.ts); suggested price-sensitive model per provider; Synthesize/Evolve keep dropdowns with tooltip descriptions and Suggested label.
