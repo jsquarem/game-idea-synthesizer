@@ -133,6 +133,8 @@ model SynthesizedOutput {
   brainstormSessionId  String
   title                String
   content              String
+  rawInput             String?
+  fullPrompt           String?
   extractedSystems     String
   extractedSystemDetails String?
   suggestedSystems     String?

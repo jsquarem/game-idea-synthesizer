@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
@@ -30,6 +31,8 @@ import {
   FileCheck,
   Link2,
   Trash2,
+  Pencil,
+  List,
 } from 'lucide-react'
 import * as AccordionPrimitive from '@radix-ui/react-accordion'
 import { Accordion, AccordionContent, AccordionItem } from '@/components/ui/accordion'
@@ -48,10 +51,32 @@ import {
   resolveSuggestedModel,
 } from '@/lib/utils/group-models-for-select'
 import { extractionToMarkdown } from '@/lib/services/extraction-markdown'
-import { convertSynthesisAction, addSuggestedSystemsToExtractionAction } from '@/app/actions/synthesis.actions'
+import {
+  convertSynthesisAction,
+  addSuggestedSystemsToExtractionAction,
+  renameSynthesisAction,
+  deleteSynthesisAction,
+} from '@/app/actions/synthesis.actions'
 import type { CandidateSelection } from '@/lib/services/synthesis-convert.service'
 
 const STEPS = ['Configure', 'Processing', 'Review'] as const
+
+function getDefaultSynthesisName(sessionTitle: string | undefined): string {
+  const now = new Date()
+  const dateStr = now.toLocaleDateString('en-US', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+  const timeStr = now.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  return sessionTitle
+    ? `${sessionTitle} – ${dateStr}, ${timeStr}`
+    : `Synthesis – ${dateStr}, ${timeStr}`
+}
 
 /** Normalize for system detail–system matching: AI may use slug or name with different casing. */
 function norm(s: string | undefined | null): string {
@@ -448,13 +473,16 @@ export type WizardConfig = {
   sessionTitle: string
   snapshotDate: string | null
   providerConfigs: { providerId: string; defaultModel: string | null; availableModels?: string[] }[]
-  sourcePreview: string
+  /** Raw brainstorm content; shown in Configure step and used as rawInput when running synthesis. */
+  sourceContent: string
 }
 
 type ExistingProjectSystemForReview = {
   systemSlug: string
   systemDetails: { name: string; detailType: string }[]
 }
+
+type SynthesisListItem = { id: string; title: string; status: string }
 
 type WizardProps = {
   initialConfig: WizardConfig
@@ -465,19 +493,23 @@ type WizardProps = {
     suggestedSystems?: ExtractedSystemStub[]
     suggestedSystemDetails?: ExtractedSystemDetailStub[]
     content: string
+    fullPrompt?: string
   } | null
   existingProjectSystems?: ExistingProjectSystemForReview[]
+  synthesisList?: SynthesisListItem[]
 }
 
 const initialStep = (existingOutputId: string | null | undefined, existingOutput: WizardProps['existingOutput']) =>
-  existingOutputId && existingOutput ? 2 : 0
+  existingOutputId && existingOutput ? 1 : 0
 
 export function SynthesizeWizard({
   initialConfig,
   existingOutputId,
   existingOutput,
   existingProjectSystems = [],
+  synthesisList = [],
 }: WizardProps) {
+  const router = useRouter()
   const [step, setStep] = useState(initialStep(existingOutputId, existingOutput))
   const [maxStepReached, setMaxStepReached] = useState(initialStep(existingOutputId, existingOutput))
   const defaultProvider = initialConfig.providerConfigs[0]
@@ -496,6 +528,10 @@ export function SynthesizeWizard({
     focusAreas: '',
     rerunMode: 'rerun',
   })
+  const [synthesisName, setSynthesisName] = useState(() =>
+    getDefaultSynthesisName(initialConfig.sessionTitle)
+  )
+  const [editableSourceContent, setEditableSourceContent] = useState(initialConfig.sourceContent)
   const [streamingText, setStreamingText] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [runError, setRunError] = useState<string | null>(null)
@@ -550,12 +586,18 @@ export function SynthesizeWizard({
   const [selectedSystemIndices, setSelectedSystemIndices] = useState<number[]>([])
   const [excludedDetailIndices, setExcludedDetailIndices] = useState<number[]>([])
   const [lastRefineOutput, setLastRefineOutput] = useState<string | null>(null)
-  const [promptUsed, setPromptUsed] = useState<string | null>(null)
+  const [promptUsed, setPromptUsed] = useState<string | null>(
+    existingOutput?.fullPrompt ?? null
+  )
   const [rawOutput, setRawOutput] = useState<string | null>(
     existingOutput?.content ?? null
   )
   const [markdownViewMode, setMarkdownViewMode] = useState<'preview' | 'source'>('preview')
   const [copyId, setCopyId] = useState<string | null>(null)
+  const [editingSynthesisId, setEditingSynthesisId] = useState<string | null>(null)
+  const [editingSynthesisTitle, setEditingSynthesisTitle] = useState('')
+  const [isRenaming, setIsRenaming] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const goToStep = useCallback((n: number) => {
     setStep(n)
@@ -792,6 +834,8 @@ export function SynthesizeWizard({
             providerId: config.providerId,
             model: config.model || undefined,
             rerunMode: config.rerunMode,
+            title: synthesisName.trim() || undefined,
+            rawInput: editableSourceContent || undefined,
           }),
         }
       )
@@ -883,13 +927,14 @@ export function SynthesizeWizard({
           // ignore
         }
       }
+      router.refresh()
       goToStep(2)
     } catch (e) {
       setRunError(e instanceof Error ? e.message : 'Synthesis failed')
     } finally {
       setIsStreaming(false)
     }
-  }, [initialConfig.projectId, initialConfig.sessionId, config])
+  }, [initialConfig.projectId, initialConfig.sessionId, editableSourceContent, config, synthesisName])
 
   const handleConvert = useCallback(async () => {
     if (!outputId) return
@@ -1251,6 +1296,56 @@ export function SynthesizeWizard({
     [convertSuggestion?.dependencies, edgesDerivedFromStubs]
   )
 
+  const handleLoadSynthesis = useCallback(
+    (outputId: string) => {
+      router.push(
+        `/projects/${initialConfig.projectId}/brainstorms/${initialConfig.sessionId}/synthesize?output=${encodeURIComponent(outputId)}`
+      )
+    },
+    [router, initialConfig.projectId, initialConfig.sessionId]
+  )
+
+  const handleStartRename = useCallback((id: string, title: string) => {
+    setEditingSynthesisId(id)
+    setEditingSynthesisTitle(title)
+  }, [])
+
+  const handleCancelRename = useCallback(() => {
+    setEditingSynthesisId(null)
+    setEditingSynthesisTitle('')
+  }, [])
+
+  const handleSubmitRename = useCallback(async () => {
+    if (!editingSynthesisId || isRenaming) return
+    setIsRenaming(true)
+    const result = await renameSynthesisAction(editingSynthesisId, editingSynthesisTitle)
+    setIsRenaming(false)
+    setEditingSynthesisId(null)
+    setEditingSynthesisTitle('')
+    if (result.success) router.refresh()
+    else if (result.error) setRunError(result.error)
+  }, [editingSynthesisId, editingSynthesisTitle, isRenaming])
+
+  const handleDeleteSynthesis = useCallback(
+    async (idToDelete: string) => {
+      if (!confirm('Delete this synthesis? This cannot be undone.')) return
+      if (isDeleting) return
+      setIsDeleting(true)
+      const result = await deleteSynthesisAction(initialConfig.projectId, idToDelete)
+      setIsDeleting(false)
+      if (result.success) {
+        if (idToDelete === outputId) {
+          router.push(
+            `/projects/${initialConfig.projectId}/brainstorms/${initialConfig.sessionId}/synthesize`
+          )
+        } else {
+          router.refresh()
+        }
+      } else if (result.error) setRunError(result.error)
+    },
+    [initialConfig.projectId, initialConfig.sessionId, isDeleting, outputId]
+  )
+
   const reviewInteractionEdges =
     dependencyEdges.length > 0
       ? dependencyEdges
@@ -1262,10 +1357,10 @@ export function SynthesizeWizard({
     <div className="flex h-full min-h-0 flex-col space-y-6">
       <div className="relative flex shrink-0 items-center">
         <Link
-          href={`/projects/${initialConfig.projectId}/brainstorms/${initialConfig.sessionId}`}
+          href={`/projects/${initialConfig.projectId}/brainstorms`}
           className="text-sm text-muted-foreground hover:text-foreground shrink-0"
         >
-          ← Back to session
+          ← Back to brainstorms
         </Link>
         <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1.5 text-sm text-muted-foreground">
           {STEPS.map((label, i) => (
@@ -1321,9 +1416,23 @@ export function SynthesizeWizard({
             <p className="text-sm text-muted-foreground">
               Source: {initialConfig.sessionTitle}
             </p>
+            <p className="text-sm text-muted-foreground">
+              Synthesis date/time: {new Date().toLocaleString()}
+            </p>
           </CardHeader>
           <CardContent className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
             <div className="shrink-0 space-y-4">
+              <div>
+                <label className="text-sm font-medium">Synthesis name (optional)</label>
+                <input
+                  type="text"
+                  className="mt-1 w-full rounded border bg-background px-3 py-2"
+                  value={synthesisName}
+                  onChange={(e) => setSynthesisName(e.target.value)}
+                  placeholder="Name for this synthesis run"
+                  aria-label="Synthesis name"
+                />
+              </div>
               <div>
                 <label className="text-sm font-medium">Provider</label>
                 <select
@@ -1439,11 +1548,13 @@ export function SynthesizeWizard({
               </Button>
             </div>
             <div className="flex flex-1 flex-col overflow-hidden min-h-0">
-              <label className="text-sm font-medium shrink-0">Source preview</label>
+              <label className="text-sm font-medium shrink-0">Source (editable)</label>
               <textarea
-                readOnly
-                className="mt-1 flex-1 w-full resize-none overflow-y-auto overflow-x-hidden rounded border bg-muted/30 p-2 text-xs font-mono"
-                value={initialConfig.sourcePreview}
+                className="mt-1 flex-1 w-full resize-none overflow-y-auto overflow-x-hidden rounded border bg-background p-2 text-xs font-mono"
+                value={editableSourceContent}
+                onChange={(e) => setEditableSourceContent(e.target.value)}
+                placeholder="Paste or edit the raw brainstorm text to synthesize…"
+                aria-label="Source text for synthesis"
               />
             </div>
           </CardContent>
@@ -2103,72 +2214,185 @@ export function SynthesizeWizard({
       </div>
 
       <aside className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-4 py-3">
-            <CardTitle className="text-base">Markdown preview</CardTitle>
-            <Tabs
-              value={markdownViewMode}
-              onValueChange={(v) => setMarkdownViewMode(v as 'preview' | 'source')}
-              className="w-auto"
-            >
-              <TabsList variant="line" className="h-8">
-                <TabsTrigger value="preview" className="text-xs flex items-center gap-1.5">
-                  <Eye className="size-3.5 shrink-0" aria-hidden />
-                  Preview
-                </TabsTrigger>
-                <TabsTrigger value="source" className="text-xs flex items-center gap-1.5">
-                  <Code className="size-3.5 shrink-0" aria-hidden />
-                  Source
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </CardHeader>
-          <CardContent className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden border-t border-border py-3">
-            {extractedSystems.length === 0 && extractedSystemDetails.length === 0 ? (
+        {step === 0 ? (
+          <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <CardHeader className="shrink-0 py-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <List className="size-4 shrink-0" aria-hidden />
+                Syntheses
+              </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Run synthesis to see preview.
+                Load, rename, or delete a previous synthesis for this brainstorm.
               </p>
-            ) : markdownViewMode === 'preview' ? (
-              <div className="markdown-preview text-sm max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {markdownPreview}
-                </ReactMarkdown>
-              </div>
-            ) : (
-              <div className="relative max-h-full min-h-0">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-2 z-10 h-8 w-8 shrink-0 bg-background/80"
-                  onClick={() => handleCopy(markdownPreview, 'markdown')}
-                  aria-label="Copy to clipboard"
-                >
-                  {copyId === 'markdown' ? (
-                    <Check className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-                <div className="max-h-full overflow-auto rounded border bg-muted/30 text-xs pr-12">
-                  <SyntaxHighlighter
-                    language="markdown"
-                    style={oneDark}
-                    customStyle={{
-                      margin: 0,
-                      padding: '1rem',
-                      fontSize: '0.75rem',
-                      background: 'transparent',
-                    }}
-                    PreTag="pre"
-                    codeTagProps={{ className: 'whitespace-pre-wrap' }}
-                  >
+            </CardHeader>
+            <CardContent className="min-h-0 flex-1 overflow-y-auto border-t border-border py-3">
+              {synthesisList.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No syntheses yet. Run synthesis below to create one.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {synthesisList.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex flex-col gap-1.5 rounded-md border border-border bg-muted/20 p-2"
+                    >
+                      {editingSynthesisId === item.id ? (
+                        <div className="flex flex-col gap-2">
+                          <input
+                            type="text"
+                            value={editingSynthesisTitle}
+                            onChange={(e) => setEditingSynthesisTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSubmitRename()
+                              if (e.key === 'Escape') handleCancelRename()
+                            }}
+                            className="rounded border bg-background px-2 py-1 text-sm"
+                            autoFocus
+                            aria-label="New title"
+                          />
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => handleSubmitRename()}
+                              disabled={isRenaming || !editingSynthesisTitle.trim()}
+                            >
+                              {isRenaming ? (
+                                <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                              ) : (
+                                <Check className="size-3.5" aria-hidden />
+                              )}
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCancelRename}
+                              disabled={isRenaming}
+                            >
+                              <X className="size-3.5" aria-hidden />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between gap-2 min-w-0">
+                            <span className="font-medium text-sm truncate" title={item.title}>
+                              {item.title}
+                            </span>
+                            <Badge variant="secondary" className="text-xs shrink-0">
+                              {item.status}
+                            </Badge>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs"
+                              onClick={() => handleLoadSynthesis(item.id)}
+                            >
+                              Load
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs"
+                              onClick={() => handleStartRename(item.id, item.title)}
+                              aria-label={`Rename ${item.title}`}
+                            >
+                              <Pencil className="size-3" aria-hidden />
+                              Rename
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteSynthesis(item.id)}
+                              disabled={isDeleting}
+                              aria-label={`Delete ${item.title}`}
+                            >
+                              <Trash2 className="size-3" aria-hidden />
+                              Delete
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-4 py-3">
+              <CardTitle className="text-base">Markdown preview</CardTitle>
+              <Tabs
+                value={markdownViewMode}
+                onValueChange={(v) => setMarkdownViewMode(v as 'preview' | 'source')}
+                className="w-auto"
+              >
+                <TabsList variant="line" className="h-8">
+                  <TabsTrigger value="preview" className="text-xs flex items-center gap-1.5">
+                    <Eye className="size-3.5 shrink-0" aria-hidden />
+                    Preview
+                  </TabsTrigger>
+                  <TabsTrigger value="source" className="text-xs flex items-center gap-1.5">
+                    <Code className="size-3.5 shrink-0" aria-hidden />
+                    Source
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </CardHeader>
+            <CardContent className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden border-t border-border py-3">
+              {extractedSystems.length === 0 && extractedSystemDetails.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Run synthesis to see preview.
+                </p>
+              ) : markdownViewMode === 'preview' ? (
+                <div className="markdown-preview text-sm max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {markdownPreview}
-                  </SyntaxHighlighter>
+                  </ReactMarkdown>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              ) : (
+                <div className="relative max-h-full min-h-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-2 z-10 h-8 w-8 shrink-0 bg-background/80"
+                    onClick={() => handleCopy(markdownPreview, 'markdown')}
+                    aria-label="Copy to clipboard"
+                  >
+                    {copyId === 'markdown' ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <div className="max-h-full overflow-auto rounded border bg-muted/30 text-xs pr-12">
+                    <SyntaxHighlighter
+                      language="markdown"
+                      style={oneDark}
+                      customStyle={{
+                        margin: 0,
+                        padding: '1rem',
+                        fontSize: '0.75rem',
+                        background: 'transparent',
+                      }}
+                      PreTag="pre"
+                      codeTagProps={{ className: 'whitespace-pre-wrap' }}
+                    >
+                      {markdownPreview}
+                    </SyntaxHighlighter>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </aside>
     </div>
     </div>

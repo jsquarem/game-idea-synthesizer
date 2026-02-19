@@ -10,7 +10,12 @@ import { listWorkspaceAiConfigs } from '@/lib/repositories/workspace-ai-config.r
 import { parseAvailableModels } from '@/lib/ai/list-models'
 import { convertSynthesisToSystems } from '@/lib/services/synthesis-convert.service'
 import type { CandidateSelection } from '@/lib/services/synthesis-convert.service'
-import { getSynthesizedOutputById, updateSynthesizedOutput } from '@/lib/repositories/synthesized-output.repository'
+import {
+  getSynthesizedOutputById,
+  updateSynthesizedOutput,
+  findSynthesizedOutputById,
+  deleteSynthesizedOutput,
+} from '@/lib/repositories/synthesized-output.repository'
 import type { ExtractedSystemStub, ExtractedSystemDetailStub } from '@/lib/ai/parse-synthesis-response'
 
 export type SynthesisConfigResult = {
@@ -153,4 +158,35 @@ export async function addSuggestedSystemsToExtractionAction(
     suggestedSystems: newSuggestedSystems,
     suggestedSystemDetails: newSuggestedDetails,
   }
+}
+
+export type RenameSynthesisResult = { success: boolean; error?: string }
+
+export async function renameSynthesisAction(
+  outputId: string,
+  title: string
+): Promise<RenameSynthesisResult> {
+  const trimmed = title.trim()
+  if (!trimmed) return { success: false, error: 'Title is required' }
+  const output = await findSynthesizedOutputById(outputId)
+  if (!output) return { success: false, error: 'Synthesis not found' }
+  await updateSynthesizedOutput(outputId, { title: trimmed })
+  revalidatePath(
+    `/projects/${output.projectId}/brainstorms/${output.brainstormSessionId}/synthesize`
+  )
+  return { success: true }
+}
+
+export type DeleteSynthesisResult = { success: boolean; error?: string }
+
+export async function deleteSynthesisAction(
+  projectId: string,
+  outputId: string
+): Promise<DeleteSynthesisResult> {
+  const output = await findSynthesizedOutputById(outputId)
+  if (!output) return { success: false, error: 'Synthesis not found' }
+  if (output.projectId !== projectId) return { success: false, error: 'Synthesis not found' }
+  await deleteSynthesizedOutput(outputId)
+  revalidatePath(`/projects/${projectId}/brainstorms/${output.brainstormSessionId}/synthesize`)
+  return { success: true }
 }

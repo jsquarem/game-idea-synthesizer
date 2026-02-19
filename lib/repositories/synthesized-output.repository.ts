@@ -7,6 +7,8 @@ export type CreateSynthesizedOutputInput = {
   brainstormSessionId: string
   title: string
   content: string
+  rawInput?: string
+  fullPrompt?: string
   extractedSystems: object[]
   extractedSystemDetails?: object[]
   suggestedSystems?: object[]
@@ -18,6 +20,7 @@ export type CreateSynthesizedOutputInput = {
 }
 
 export type UpdateSynthesizedOutputInput = {
+  title?: string
   status?: string
   content?: string
   extractedSystems?: object[]
@@ -35,6 +38,8 @@ export async function createSynthesizedOutput(
       brainstormSessionId: data.brainstormSessionId,
       title: data.title,
       content: data.content,
+      rawInput: data.rawInput ?? undefined,
+      fullPrompt: data.fullPrompt ?? undefined,
       extractedSystems: JSON.stringify(data.extractedSystems),
       extractedSystemDetails: data.extractedSystemDetails
         ? JSON.stringify(data.extractedSystemDetails)
@@ -102,6 +107,7 @@ export async function updateSynthesizedOutput(
   data: UpdateSynthesizedOutputInput
 ): Promise<SynthesizedOutput> {
   const update: {
+    title?: string
     status?: string
     content?: string
     extractedSystems?: string
@@ -109,6 +115,7 @@ export async function updateSynthesizedOutput(
     suggestedSystems?: string
     suggestedSystemDetails?: string
   } = {}
+  if (data.title !== undefined) update.title = data.title
   if (data.status !== undefined) update.status = data.status
   if (data.content !== undefined) update.content = data.content
   if (data.extractedSystems !== undefined)

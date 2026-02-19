@@ -118,7 +118,7 @@ export async function listProjectActivity(
       id: b.id,
       label: `New brainstorm: ${truncate(b.title, 50)}`,
       occurredAt: b.createdAt,
-      href: `${base}/brainstorms/${b.id}`,
+      href: `${base}/brainstorms/${b.id}/synthesize`,
     })
   }
 
@@ -252,7 +252,7 @@ export async function getLatestActivityPerType(
       id: brainstorm.id,
       label: truncate(brainstorm.title, 50),
       occurredAt: brainstorm.createdAt,
-      href: `${base}/brainstorms/${brainstorm.id}`,
+      href: `${base}/brainstorms/${brainstorm.id}/synthesize`,
     })
   }
   if (system) {

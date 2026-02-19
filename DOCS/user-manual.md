@@ -167,28 +167,19 @@ Navigate to the **Brainstorms** tab to see all sessions for the current project.
 
 1. Click **New Brainstorm** (from the Brainstorms list or the Overview page).
 2. Fill in the form:
-   - **Title** (required) -- Defaults to "Untitled". Give it a descriptive name.
-   - **Input mode** -- Choose how you want to enter content:
-     - **Paste** -- For pasting Discord threads, chat logs, or notes from elsewhere.
-     - **Freeform** -- For writing ideas directly in markdown or plain text.
-     - **Upload** -- For file-based content (placeholder for future file upload support).
-   - **Content** (required) -- The actual brainstorm text. The placeholder text changes based on your selected input mode.
-   - **Author** (required) -- Who created this brainstorm.
+   - **Title** (required) -- Defaults to "Brainstorm - &lt;date and time&gt;". You can change it to a descriptive name.
+   - **Content** (required) -- Paste or type your brainstorm text (e.g. Discord threads, notes, markdown).
    - **Tags** -- Optional labels for categorization. Type a tag name and press Enter or click **Add**. Click the **x** on a tag to remove it.
-3. Click **Save session**.
+   The session author is set automatically from your current user (Settings → Profile).
+3. Click **Save session**. You are taken to the Synthesize flow (Configure step) for that session.
 
-### Viewing a Session
+### Opening a Session
 
-Click any session from the list to view its details:
-
-- **Content** displayed as read-only text
-- **Metadata** -- Author, creation date, source type, and tags
-- **Synthesized outputs** -- If the session has been processed, results appear here
-- **Synthesize** button -- Initiates the synthesis workflow (see Core Workflow)
+Click any session from the list. You go directly to the **Synthesize** flow (Configure step). There is no separate session preview page. On the Configure step, the right column lists all syntheses for this brainstorm; you can **Load** a previous synthesis (which opens the Processing step with that synthesis populated), rename it, or delete it. After you run synthesis, the Processing and Review steps show a markdown preview of the extraction.
 
 ### Deleting a Session
 
-On a session's detail page, use the **Delete** button. You will be asked to confirm before the session is permanently removed.
+On the Brainstorms list, each session card has a **Delete** button. Click it and confirm to permanently remove the session.
 
 You can also create a brainstorm session by **finalizing** threads from Idea Stream (see [Idea Stream](#7-idea-stream)).
 
@@ -424,7 +415,7 @@ Paste your Discord threads, meeting notes, or freeform ideas into brainstorm ses
 
 ### Step 3: Synthesize Ideas
 
-Use the Synthesize feature on a brainstorm session to have AI process your raw ideas into structured outputs. The wizard has three steps: Configure, Processing, and Review. You can move back and forth between steps you have already reached. Review is the final step: use the single Refine form to improve the extraction (refine all systems, or select specific systems to refine only those), then use the Finalize section (Get AI suggestion, Apply suggestion, **Create selected**) to choose which systems to create or merge. Get AI suggestion shows what was sent to the AI (summary and optional "Show prompt" with copy) and the suggestion with an optional **Why** (rationale). Below that, extracted systems appear as independently expandable list items (expand handle on the left; use the **Added** / **Excluded** button per system to include or exclude from finalize). **Added** and **Updated** badges on extracted systems and system details indicate whether each item is new to the project or already exists (compared to your current project systems).
+Use the Synthesize feature on a brainstorm session to have AI process your raw ideas into structured outputs. The wizard has three steps: Configure, Processing, and Review. On Configure you can set an optional **synthesis name** (a default is provided from the session title and current date/time; you can overwrite it) and see the **synthesis date/time**. You can move back and forth between steps you have already reached. Review is the final step: use the single Refine form to improve the extraction (refine all systems, or select specific systems to refine only those), then use the Finalize section (Get AI suggestion, Apply suggestion, **Create selected**) to choose which systems to create or merge. Get AI suggestion shows what was sent to the AI (summary and optional "Show prompt" with copy) and the suggestion with an optional **Why** (rationale). Below that, extracted systems appear as independently expandable list items (expand handle on the left; use the **Added** / **Excluded** button per system to include or exclude from finalize). **Added** and **Updated** badges on extracted systems and system details indicate whether each item is new to the project or already exists (compared to your current project systems).
 
 ### Step 4: Define Game Systems
 
@@ -483,3 +474,9 @@ The goal is to go from raw brainstorm to a structured, dependency-aware implemen
 *Change log: 2026-02-18 — Get AI suggestion: Finalize shows "Based on N candidates, M existing systems," expandable Show prompt with copy, and AI rationale (Why) when provided.*
 
 *Change log: 2026-02-18 — Systems view: expandable list with nested system details; Evolve with AI chat (list and system detail page) for iterative refinement; conversation persisted per system.*
+
+*Change log: 2026-02-19 — §6 Brainstorm Sessions: clicking a session opens the Synthesize flow (Configure step) directly; no separate session detail page. Delete moved to Brainstorms list (per-card Delete button). Configure step shows synthesis list (load, rename, delete).*
+
+*Change log: 2026-02-19 — Synthesize: loading a synthesis opens the Processing step with that synthesis populated. Configure step adds optional synthesis name (dynamic default) and synthesis date/time display.*
+
+*Change log: 2026-02-19 — §6 Creating a Session: author set from current user; default title "Brainstorm - &lt;datetime&gt;"; input mode removed; Content and Tags only (plus optional title edit).*

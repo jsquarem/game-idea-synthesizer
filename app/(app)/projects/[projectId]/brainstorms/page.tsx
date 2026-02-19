@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/page-header'
+import { DeleteBrainstormButton } from './[sessionId]/delete-brainstorm-button'
+import { deleteBrainstormAction } from '@/app/actions/brainstorm.actions'
 
 export default async function BrainstormsListPage({
   params,
@@ -40,9 +42,12 @@ export default async function BrainstormsListPage({
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {data.map((session) => (
             <li key={session.id}>
-              <Link href={`/projects/${projectId}/brainstorms/${session.id}`}>
-                <Card className="transition-shadow duration-150 hover:shadow-md">
-                  <CardContent>
+              <Card className="transition-shadow duration-150 hover:shadow-md">
+                <CardContent className="flex items-start justify-between gap-2 pt-4">
+                  <Link
+                    href={`/projects/${projectId}/brainstorms/${session.id}/synthesize`}
+                    className="min-w-0 flex-1"
+                  >
                     <h2 className="font-semibold">{session.title}</h2>
                     {session.author && (
                       <p className="mt-1 text-sm text-muted-foreground">by {session.author}</p>
@@ -63,9 +68,14 @@ export default async function BrainstormsListPage({
                         </>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
+                  </Link>
+                  <DeleteBrainstormButton
+                    projectId={projectId}
+                    sessionId={session.id}
+                    deleteAction={deleteBrainstormAction}
+                  />
+                </CardContent>
+              </Card>
             </li>
           ))}
         </ul>
