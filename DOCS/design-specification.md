@@ -162,12 +162,15 @@ Activity page (`/projects/:projectId/activity`): Full project activity history (
 
 This is a **multi-step wizard**:
 
-| Step | Name               | Description                                                         |
-|------|--------------------|---------------------------------------------------------------------|
-| 1    | Configure          | Select AI model, set focus areas (optional), confirm source text    |
-| 2    | Processing         | Loading state with streaming AI response preview                   |
-| 3    | Review Output      | Rendered structured output: extracted system candidates, key themes, suggested dependencies |
-| 4    | Convert to Systems | Checkbox list of extracted systems → "Create Selected Systems"     |
+| Step | Name          | Description                                                                                                                                 |
+|------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| 1    | Configure     | Select AI model, set focus areas (optional), confirm source text                                                                           |
+| 2    | Processing    | Loading state with streaming AI response preview                                                                                           |
+| 3    | Review        | Refine form, then Finalize (Get AI suggestion, Create selected), then extracted systems as independently expandable list items (left expand handle, Added/Excluded button per system). |
+
+**Lightweight UX:** Default configs and pre-populated values so the user can often "review and go"; minimal required input in Configure.
+
+**Step navigation:** Any step that has been reached (0 through max step completed) is clickable; the user can move back and forth without losing state. Users cannot jump ahead to a step they have not yet completed. Step content state is preserved when navigating; it is overwritten only when the user re-executes an action (e.g. Run Synthesize, Refine).
 
 ### 1.3.9 Systems List (`/projects/:projectId/systems`)
 
@@ -540,12 +543,11 @@ Below is every distinct component the application requires, organized by categor
 
 | Component                 | Type   | Description                                                   |
 |---------------------------|--------|---------------------------------------------------------------|
-| `SynthesizeWizard`        | Client | Multi-step wizard container (steps 1–4)                       |
+| `SynthesizeWizard`        | Client | Multi-step wizard container (steps 1–3)                       |
 | `WizardStepIndicator`     | Client | Horizontal step progress indicator                            |
 | `SynthConfigStep`         | Client | Step 1: model select, focus areas, source preview             |
 | `SynthProcessingStep`     | Client | Step 2: loading spinner + streaming AI output preview         |
-| `SynthReviewStep`         | Client | Step 3: rendered structured output with extracted systems     |
-| `SynthConvertStep`        | Client | Step 4: checkbox list of systems to create                    |
+| `SynthReviewStep`         | Client | Step 3: refine + selectable system cards + finalize (create/merge/discard, Create selected) |
 | `ExtractedSystemCard`     | Client | Preview card for an AI-extracted system candidate             |
 | `StreamingTextDisplay`    | Client | Progressive text rendering for AI streaming responses         |
 
@@ -713,7 +715,7 @@ Screen 2: New Brainstorm (/projects/:id/brainstorms/new)
   [If Save & Synthesize]: redirect to synthesize flow
 ```
 
-## 4.3 Synthesize Brainstorm → Review → Convert to Systems
+## 4.3 Synthesize Brainstorm → Review (final step) and finalize
 
 ```
 Screen 1: Brainstorm View (/projects/:id/brainstorms/:sessionId)
@@ -730,25 +732,12 @@ Screen 3: Synthesize Wizard — Step 2: Processing
   → Loading animation + streaming text preview
   → AI response streams in real-time
   → "Cancel" button available
-  → Auto-advances to Step 3 on completion
+  → Auto-advances to Step 3 (Review) on completion
 
-Screen 4: Synthesize Wizard — Step 3: Review Output
-  → Rendered structured output:
-    - Key themes identified
-    - System candidates (name, purpose, suggested dependencies)
-    - Suggested criticality ratings
-  → User can review each extracted system candidate
-  → User clicks "Continue to Convert"
-
-Screen 5: Synthesize Wizard — Step 4: Convert to Systems
-  → Checkbox list of extracted system candidates
-  → Each row: ☐ System Name | Purpose summary | [Edit] link
-  → "Select All" / "Deselect All" controls
-  → User checks desired systems
-  → User clicks "Create Selected Systems"
-  → Server Action: creates system documents for each selected system
-  → Toast: "X systems created"
-  → Redirect to /projects/:id/systems
+Screen 4: Synthesize Wizard — Step 3: Review (final step)
+  → **Refine** (top): Single text input + Refine button. No systems selected → refines entire extraction; systems selected (via card checkboxes) → refines only those systems.
+  → **Extracted systems:** Header is one row with title, subtitle, and **Add all** / **Exclude all** (aligned right, same margin as row buttons). Expandable, selectable cards. Each card: selection control (**Include/Exclude**) on the **far right** (button + icon); system name/slug; expand to show system details. Selection uses **button + icon** (action); status uses **New** / **Existing** badges with light coloring and icons (distinct from buttons). **Iconography** consistent (steps, Refine, Finalize, tabs). Each detail has **Include/Exclude** button (same as system row) to include or exclude from finalize.
+  → **Finalize:** Get AI suggestion / Apply suggestion to fill create/merge/discard and dependencies. Get AI suggestion **normalizes** responses so any candidate index omitted by the AI is treated as **discard** (no error). "Create selected" button → Server Action creates/merges selected systems, redirect to /projects/:id/systems.
 ```
 
 ## 4.4 Create/Edit Game System
@@ -793,6 +782,12 @@ Screen 2: System Editor (/projects/:id/systems/new)
     → Same screen, pre-populated with existing data
     → "Save Changes" replaces "Save System"
     → Change appended to Change Log automatically
+
+  [System detail — Behaviors]
+    → Below the system form, a **System details** block lists the system's details (name, type, spec).
+    → Accordion: expand each detail to view spec and Edit / Delete.
+    → "Add system detail": form for name, type (mechanic | input | output | content | ui_hint), spec (markdown).
+    → Purpose and section content (Core Mechanics, Inputs, Outputs, Implementation Notes) are derived from system details when present (Option A roll-up); purpose can still be overridden in the form.
 ```
 
 ## 4.5 System Merge
@@ -1380,3 +1375,15 @@ All persistent data (projects, systems, brainstorms, plans, prompts) lives serve
 - 2026-02-17: Draft v1.1; site map, navigation, flows, design tokens.
 - 2026-02-18: Overview quick-stats include Idea Stream (thread count); recent activity shows thread activity and links to Activity page; Activity route added; breadcrumbs show project name and link to overview.
 - 2026-02-18: Activity page shows all project activity types (brainstorms, systems, threads, exports, version plans, dependencies) in a single timeline.
+- 2026-02-18: §1.3.8 Lightweight UX note (default configs, minimal input); synthesize wizard implemented (Configure → Processing → Review → Convert).
+- 2026-02-18: Review step: Extraction / Prompt & raw tabs moved to header right of title; Prompt & raw copy buttons next to section titles; Markdown preview panel has Preview/Source toggle and Source view (code block with copy button); prose spacing improved for markdown preview.
+- 2026-02-18: §4.3 Review & iterate (Refine with AI, per-system Refine button); Convert step Get AI suggestion / Apply suggestion.
+- 2026-02-18: §4.3 Review step: systems accordion; expanded panel = system details accordion + scope + per-system refine; full refinement at bottom only.
+- 2026-02-18: §4.3 Review step: Refine entire extraction moved to top of Extraction tab; Added/Updated badges on systems and system details after each refine (vs pre-refine baseline).
+- 2026-02-18: §1.3.8 Step navigation: any reached step clickable (0..maxStepReached); state preserved; no jumping ahead. §4.3 Review: Added/Updated badges based on existing project systems and system details (detail match by name+detailType).
+- 2026-02-18: §4.4 System detail: System details block (list, add/edit/delete); system details as structured system definition; Option A roll-up (purpose and sections derived from system details).
+- 2026-02-18: Renamed "Behaviors" to "System details" in §4.4 and changelog.
+- 2026-02-18: §1.3.8 and §4.3: 3-step wizard; Review is final step with single refine form (scope = all or selected systems), selectable expandable cards, and finalize (Get AI suggestion, Apply suggestion, Create selected) on same step; removed Convert step and SynthConvertStep.
+- 2026-02-18: §1.3.8 Review step: Finalize block above extracted systems; extracted systems as independent expandables with left handle and Added/Excluded button.
+- 2026-02-18: §4.3 Convert-suggest normalizes missing indices to discard; Extracted systems header has Add all/Exclude all, per-row Include/Exclude on far right; selection buttons vs New/Existing status badges; consistent iconography.
+- 2026-02-18: §4.3 Add all/Exclude all aligned right with same margin; system details use Include/Exclude buttons (not checkboxes); New/Existing badges use light coloring.

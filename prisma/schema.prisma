@@ -61,17 +61,18 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  workspace            Workspace?           @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
-  brainstorms          BrainstormSession[]
-  synthesizedOutputs   SynthesizedOutput[]
-  gameSystems          GameSystem[]
-  versionPlans         VersionPlan[]
-  promptHistories      PromptHistory[]
-  exports              Export[]
-  memberships          ProjectMembership[]
-  ideaStreamThreads    IdeaStreamThread[]
-  ideaStreamMessages   IdeaStreamMessage[]
-  ideaStreamThreadReads IdeaStreamThreadRead[]
+  workspace               Workspace?                @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  brainstorms             BrainstormSession[]
+  synthesizedOutputs      SynthesizedOutput[]
+  gameSystems            GameSystem[]
+  versionPlans           VersionPlan[]
+  promptHistories        PromptHistory[]
+  exports                Export[]
+  memberships            ProjectMembership[]
+  ideaStreamThreads      IdeaStreamThread[]
+  ideaStreamMessages     IdeaStreamMessage[]
+  ideaStreamThreadReads  IdeaStreamThreadRead[]
+  contextSnapshots        ProjectContextSnapshot[]
 
   @@index([status])
   @@index([createdAt])
@@ -132,6 +133,7 @@ model SynthesizedOutput {
   title                String
   content              String
   extractedSystems     String
+  extractedSystemDetails String?
   status               String   @default("pending")
   aiProvider           String?
   aiModel              String?
@@ -143,10 +145,24 @@ model SynthesizedOutput {
   project            Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   brainstormSession  BrainstormSession @relation(fields: [brainstormSessionId], references: [id], onDelete: Cascade)
   gameSystems        GameSystem[]
+  systemDetails      SystemDetail[]
+  conversationMessages SynthesisConversationMessage[]
 
   @@index([projectId])
   @@index([brainstormSessionId])
   @@index([status])
+}
+
+model SynthesisConversationMessage {
+  id                   String   @id @default(cuid())
+  synthesizedOutputId  String
+  role                 String
+  content              String
+  createdAt            DateTime @default(now())
+
+  synthesizedOutput SynthesizedOutput @relation(fields: [synthesizedOutputId], references: [id], onDelete: Cascade)
+
+  @@index([synthesizedOutputId])
 }
 
 model GameSystem {
@@ -180,11 +196,46 @@ model GameSystem {
   changeLogs        ChangeLog[]
   versionPlanItems  VersionPlanItem[]
   promptHistories   PromptHistory[]
+  systemDetails     SystemDetail[]
 
   @@unique([projectId, systemSlug])
   @@index([projectId])
   @@index([status])
   @@index([mvpCriticality])
+}
+
+model ProjectContextSnapshot {
+  id                       String    @id @default(cuid())
+  projectId                String
+  content                  String
+  contentVersion           Int       @default(1)
+  trigger                  String    @default("synthesis")
+  relatedSynthesisOutputId  String?
+  relatedBrainstormSessionId String?
+  createdAt                DateTime  @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([projectId, createdAt])
+}
+
+model SystemDetail {
+  id                   String   @id @default(cuid())
+  gameSystemId         String
+  name                 String
+  detailType           String
+  spec                 String
+  sortOrder            Int      @default(0)
+  synthesizedOutputId  String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  gameSystem  GameSystem         @relation(fields: [gameSystemId], references: [id], onDelete: Cascade)
+  synthesizedOutput SynthesizedOutput? @relation(fields: [synthesizedOutputId], references: [id], onDelete: SetNull)
+
+  @@index([gameSystemId])
+  @@index([synthesizedOutputId])
 }
 
 model Dependency {
@@ -290,13 +341,15 @@ model PromptHistory {
 }
 
 model Export {
-  id         String   @id @default(cuid())
-  projectId  String
-  exportType String
-  format     String   @default("markdown")
-  content    String
-  metadata   String?
-  createdAt  DateTime @default(now())
+  id                   String    @id @default(cuid())
+  projectId            String
+  exportType           String
+  format               String    @default("markdown")
+  content              String
+  metadata             String?
+  synthesizedOutputId  String?
+  markedUpToDateAt     DateTime?
+  createdAt            DateTime  @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 

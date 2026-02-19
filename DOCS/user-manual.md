@@ -420,7 +420,7 @@ Paste your Discord threads, meeting notes, or freeform ideas into brainstorm ses
 
 ### Step 3: Synthesize Ideas
 
-Use the Synthesize feature on a brainstorm session to have AI process your raw ideas into structured outputs. Review the results.
+Use the Synthesize feature on a brainstorm session to have AI process your raw ideas into structured outputs. The wizard has three steps: Configure, Processing, and Review. You can move back and forth between steps you have already reached. Review is the final step: use the single Refine form to improve the extraction (refine all systems, or select specific systems to refine only those), then use the Finalize section (Get AI suggestion, Apply suggestion, **Create selected**) to choose which systems to create or merge. Get AI suggestion shows what was sent to the AI (summary and optional "Show prompt" with copy) and the suggestion with an optional **Why** (rationale). Below that, extracted systems appear as independently expandable list items (expand handle on the left; use the **Added** / **Excluded** button per system to include or exclude from finalize). **Added** and **Updated** badges on extracted systems and system details indicate whether each item is new to the project or already exists (compared to your current project systems).
 
 ### Step 4: Define Game Systems
 
@@ -472,4 +472,8 @@ The goal is to go from raw brainstorm to a structured, dependency-aware implemen
 
 ---
 
-*Change log: 2026-02-18 — Added Section 3 Settings (Profile, Workspace members and AI config, Prototype user creation and switch). Renumbered sections 3–14. Glossary: Workspace, Active user.*
+*Change log: 2026-02-18 — Added Section 3 Settings (Profile, Workspace members and AI config, Prototype user creation and switch). Renumbered sections 3–14. Glossary: Workspace, Active user. Step 3 Synthesize: step navigation (back/forth among reached steps); Added/Updated badges vs existing project.*
+
+*Change log: 2026-02-18 — Synthesize flow: 3-step wizard; Review is final step with single refine form (all or selected systems), independently expandable list with Added/Excluded button per system, Finalize above list, Create selected on same step.*
+
+*Change log: 2026-02-18 — Get AI suggestion: Finalize shows "Based on N candidates, M existing systems," expandable Show prompt with copy, and AI rationale (Why) when provided.*

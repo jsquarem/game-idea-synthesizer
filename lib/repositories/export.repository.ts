@@ -8,6 +8,13 @@ export type CreateExportInput = {
   format?: string
   content: string
   metadata?: object
+  synthesizedOutputId?: string
+}
+
+export type UpdateExportInput = {
+  content?: string
+  metadata?: object
+  markedUpToDateAt?: Date | null
 }
 
 const DEFAULT_PAGE_SIZE = 20
@@ -20,8 +27,20 @@ export async function createExport(data: CreateExportInput): Promise<Export> {
       format: data.format ?? 'markdown',
       content: data.content,
       metadata: data.metadata ? JSON.stringify(data.metadata) : null,
+      synthesizedOutputId: data.synthesizedOutputId ?? undefined,
     },
   })
+}
+
+export async function updateExport(
+  id: string,
+  data: UpdateExportInput
+): Promise<Export> {
+  const update: { content?: string; metadata?: string; markedUpToDateAt?: Date | null } = {}
+  if (data.content !== undefined) update.content = data.content
+  if (data.metadata !== undefined) update.metadata = JSON.stringify(data.metadata)
+  if (data.markedUpToDateAt !== undefined) update.markedUpToDateAt = data.markedUpToDateAt
+  return prisma.export.update({ where: { id }, data: update })
 }
 
 export async function getExportById(id: string): Promise<Export> {

@@ -8,6 +8,7 @@ export type CreateSynthesizedOutputInput = {
   title: string
   content: string
   extractedSystems: object[]
+  extractedSystemDetails?: object[]
   aiProvider?: string
   aiModel?: string
   promptTokens?: number
@@ -18,6 +19,7 @@ export type UpdateSynthesizedOutputInput = {
   status?: string
   content?: string
   extractedSystems?: object[]
+  extractedSystemDetails?: object[]
 }
 
 export async function createSynthesizedOutput(
@@ -30,6 +32,9 @@ export async function createSynthesizedOutput(
       title: data.title,
       content: data.content,
       extractedSystems: JSON.stringify(data.extractedSystems),
+      extractedSystemDetails: data.extractedSystemDetails
+        ? JSON.stringify(data.extractedSystemDetails)
+        : undefined,
       aiProvider: data.aiProvider,
       aiModel: data.aiModel,
       promptTokens: data.promptTokens,
@@ -86,10 +91,18 @@ export async function updateSynthesizedOutput(
   id: string,
   data: UpdateSynthesizedOutputInput
 ): Promise<SynthesizedOutput> {
-  const update: { status?: string; content?: string; extractedSystems?: string } = {}
+  const update: {
+    status?: string
+    content?: string
+    extractedSystems?: string
+    extractedSystemDetails?: string
+  } = {}
   if (data.status !== undefined) update.status = data.status
   if (data.content !== undefined) update.content = data.content
-  if (data.extractedSystems !== undefined) update.extractedSystems = JSON.stringify(data.extractedSystems)
+  if (data.extractedSystems !== undefined)
+    update.extractedSystems = JSON.stringify(data.extractedSystems)
+  if (data.extractedSystemDetails !== undefined)
+    update.extractedSystemDetails = JSON.stringify(data.extractedSystemDetails)
   return prisma.synthesizedOutput.update({ where: { id }, data: update })
 }
 

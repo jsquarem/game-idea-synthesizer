@@ -34,13 +34,15 @@ Generates exportable documents in markdown and JSON formats. Assembles composite
 - dependency-graph (for graph data in documents)
 
 ## Code Mapping
-- Service: `lib/services/export.service.ts`
+- Service: `lib/services/export.service.ts`, `lib/services/system-detail-roll-up.service.ts` (deriveSectionsFromSystemDetails for GDD)
+- Repository: `lib/repositories/system-detail.repository.ts` (listSystemDetailsByProjectId)
 - Parser: `lib/parsers/export-parser.ts`
 - Actions: `app/actions/export.actions.ts`
 - API route: `app/api/exports/[id]/download/route.ts`
 
 ## Current Implementation
-(To be filled during implementation)
+- **System detail roll-up (Option A):** GDD export derives per-system section content from system details: mechanic→Core Mechanics, input→Inputs, output→Outputs, ui_hint→Implementation Notes, content→Content. Purpose is system.purpose or derived from first mechanic detail when empty. Standalone fields (Current State, Target State, Failure States, Scaling Behavior, Open Questions) remain from GameSystem.
+- **Export center:** List view of all exports; type/label (exportType); "Needs submission" badge when not marked up to date; "From synthesis run" when `synthesizedOutputId` is set; preview (expand); per-doc actions: Download (marks as up to date when user downloads), Copy, Mark as up to date; "Mark all as up to date". Export model has `synthesizedOutputId` and `markedUpToDateAt`. After each synthesis run a GDD export is created and linked to that run.
 
 ## Known Limitations
 - No PDF export in v1
@@ -56,3 +58,7 @@ Generates exportable documents in markdown and JSON formats. Assembles composite
 ## Change Log
 
 - 2026-02-17: Doc synced with codebase; current implementation and code mapping.
+- 2026-02-18: Behavior roll-up strategy documented (dedicated Behaviors section).
+- 2026-02-18: Export center list view; Needs submission badge; Mark up to date / Mark all; Download marks up to date; synthesizedOutputId and markedUpToDateAt; GDD export created per synthesis run.
+- 2026-02-18: GDD uses Option A roll-up (derive sections from system details); listSystemDetailsByProjectId; system-detail-roll-up.service; code mapping updated.
+- 2026-02-18: Renamed behaviors → system details in code mapping and roll-up description.
