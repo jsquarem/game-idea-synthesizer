@@ -1378,6 +1378,8 @@ NOT using:
 
 ## 6.2 Rendering Approach
 
+**Current implementation:** Layout is produced by a **bake-off adapter** in `getLayoutedFlow` (`lib/graph/transform.ts`) that evaluates candidate **ELK layered** and **Graphviz DOT** layouts, scores them using readability metrics (near-square footprint, crossing proxy, edge span), and uses the best-scoring result. Candidate override is available via `NEXT_PUBLIC_GRAPH_LAYOUT_STRATEGY` (`auto`/`elk`/`graphviz`). ELK is still configured for orthogonal routing and crossing minimization, but no longer force-partitions nodes by precomputed dependency levels. The custom edge component draws right-angle paths with per-edge offset to reduce overlap; labels are multiline and shown only when zoom ≥ 0.45 (readability-by-zoom). Default **layout mode** is "Organized" (group + fewer crossings); Layout dropdown offers Top–down / Left–right. Canvas uses a flowchart-style grid background (major/minor lines).
+
 ### Graph Data Transformation
 
 ```ts
@@ -1491,28 +1493,21 @@ export function SystemNode({ data, selected }: NodeProps) {
 
 The dependency graph lives at `projects/[projectId]/dependencies/page.tsx`.
 
-Layout: **Full page with resizable side panel**.
+Layout: **Full page with right column** (graph 2:1 wider than sidebar). Right column order: (1) **System preview** — `DependencySidePanel` when a node is selected, skeleton when none; (2) **Interaction links** card (definition-style list: source → target, description below, Remove per link); (3) **Add interaction link** card (form with optional description). Suggested build order has been removed.
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│  Page Header: "Dependency Graph"     [Controls Bar] │
+│  Page Header: "Systems interaction"   [Controls Bar]  │
 ├────────────────────────────┬────────────────────────┤
-│                            │                        │
-│                            │   System Detail Panel  │
-│     Interactive Graph      │   (appears on node     │
-│     (React Flow Canvas)    │    click)              │
-│                            │                        │
-│                            │   - Name, status       │
-│                            │   - Dependencies list  │
-│                            │   - Depended on by     │
-│                            │   - [Edit] [View] btns │
-│                            │                        │
+│                            │  System preview       │
+│     Interactive Graph      │  (panel or skeleton)   │
+│     (React Flow Canvas)    │                        │
+│     Edges with labels      │  Interaction links    │
+│                            │  Add interaction link  │
 ├────────────────────────────┴────────────────────────┤
-│  MiniMap                                            │
-└─────────────────────────────────────────────────────┘
 ```
 
-The side panel uses Shadcn `Resizable` panels. When no node is selected, the graph takes the full width.
+When no node is selected, the system preview slot shows a skeleton to keep layout stable.
 
 The graph is also embeddable as a compact version in:
 - `projects/[projectId]/page.tsx` — project overview shows a read-only mini graph
@@ -1580,8 +1575,7 @@ The graph is also embeddable as a compact version in:
 | Package | Version | Purpose |
 |---------|---------|---------|
 | `@xyflow/react` | `^12` | React Flow graph canvas |
-| `dagre` | `^0.8` | Directed graph auto-layout algorithm |
-| `@types/dagre` | `^0.7` | TypeScript types for dagre |
+| `elkjs` | (see package.json) | Layered graph auto-layout (replaces dagre for dependency graph) |
 
 ### Data & Backend
 
@@ -2099,3 +2093,8 @@ game-idea-synthesizer/
 
 - 2026-02-17: Initial system definition; routes, components, state, data flow, markdown, dependency graph.
 - 2026-02-18: Activity page (`projects/[projectId]/activity`); Activity in sidebar nav; breadcrumbs use ProjectBreadcrumbContext for project name and overview link.
+- 2026-02-19: §6.4 Dependencies page: system preview with skeleton when no selection; Suggested build order removed; Interaction links as definition-style list; Add link form with optional description (see edge-labels-and-visible-connections plan).
+- 2026-02-19: Dependency graph layout: dagre replaced with elkjs; lib/graph/transform.ts exports async getLayoutedFlow; custom dependencyEdge component for labeled edges; Interaction links show "— No description" when empty; synthesis extraction and convert fallback populate dependency descriptions.
+- 2026-02-19: §6.2: Orthogonal (right-angle) flowchart edges; temporary high-visibility edge/arrow styling; multiline wrapped labels; grid background. Custom edge uses getSmoothStepPath(borderRadius: 0).
+- 2026-02-19: §6.2: Readability logic — pre-layout organization, ELK crossing minimization and spacing, edge path offset, zoom-dependent labels, default layout mode "Organized".
+- 2026-02-19: §6.2 layout bake-off added in `lib/graph/transform.ts`: candidate ELK and Graphviz layouts are scored by readability (aspect ratio, crossing proxy, edge span) and the winner is rendered; `NEXT_PUBLIC_GRAPH_LAYOUT_STRATEGY` allows local override.

@@ -4,14 +4,32 @@
  * Handles markdown code blocks (```json ... ```) around the payload.
  */
 
+/** One dependency: slug only (legacy) or slug + optional description. */
+export type ExtractedDependencyEntry = string | { slug: string; description?: string }
+
 export type ExtractedSystemStub = {
   name?: string
   systemSlug?: string
   purpose?: string
   version?: string
   mvpCriticality?: string
-  dependencies?: string[]
+  /** Slug-only array (legacy) or array of { slug, description? } for labeled links. */
+  dependencies?: ExtractedDependencyEntry[]
   [key: string]: unknown
+}
+
+/**
+ * Normalize a single dependency entry to { slug, description? }.
+ * Use when building edges from extracted systems so descriptions are preserved.
+ */
+export function normalizeDependencyEntry(
+  entry: ExtractedDependencyEntry
+): { slug: string; description?: string } {
+  if (typeof entry === 'string') {
+    return { slug: entry }
+  }
+  const desc = typeof entry.description === 'string' ? entry.description.trim() : undefined
+  return { slug: entry.slug, description: desc || undefined }
 }
 
 export type ExtractedSystemDetailStub = {

@@ -267,7 +267,7 @@ export async function buildDeltaSinceSnapshot(
 
 const EXTRACTION_INSTRUCTIONS = `You must identify game systems AND their system details from the context and new brainstorm. Respond with ONLY a single JSON object (no markdown, no code fence, no explanation). Do not repeat or include the example below; output only your extraction. The JSON must have at least these two keys; optional keys for gap-filling:
 
-1. "extractedSystems": array of objects. Each has: name, systemSlug (lowercase-with-hyphens), purpose (one short sentence), dependencies (array of other system slugs this system depends on or interfaces with—who calls whom, who feeds whom; may be empty).
+1. "extractedSystems": array of objects. Each has: name, systemSlug (lowercase-with-hyphens), purpose (one short sentence), dependencies (array of dependency entries—see below; may be empty). Each dependency entry is either a string (target system slug) or an object { "slug": "target-system-slug", "description": "short phrase describing how this system interacts with the target" }. Always prefer the object form with description so the flowchart shows labeled connections (e.g. "sends encounter events", "uses for targeting").
 2. "extractedSystemDetails": array of objects. Each has: name, detailType (exactly one of: mechanic, input, output, content, ui_hint), spec (markdown string describing the system detail), targetSystemSlug (must match the systemSlug of the system this detail belongs to).
 
 If a system would have no dependencies (solo system), that often indicates a gap—a missing system this one should depend on or be depended on by. In that case, add one or more systems to the optional "suggestedSystems" array (same shape as extractedSystems) and add suggested system details to the optional "suggestedSystemDetails" array (same shape as extractedSystemDetails; use targetSystemSlug to attach details to a suggested system). Make the originally-solo extracted system depend on the suggested system's slug or vice versa.
@@ -277,7 +277,7 @@ Rules:
 - Optional "suggestedSystems" and "suggestedSystemDetails": when you identify a system with no dependencies, suggest new system(s) that would fill the gap and list them here; then give the solo system a dependency on the suggested system's slug.
 - The main definition of each system is its system details—break down mechanics, inputs, outputs, and UI/content into separate details rather than putting everything in purpose.
 - Produce one system per major interface boundary so the result can be visualized as a systems interaction flowchart (e.g. Guild Management, Quest Selection, Combat/Encounters, Behavior Trees, Roles, Heroes/Units, Player Intervention, AI Learning, Boss/Encounter Mechanics, Reputation, Resource Production, Hero Training Upgrades as distinct systems where the design implies them).
-- Set dependencies to reflect interaction flow: for each system, list the slugs of systems it interfaces with or uses (data flow, triggers, "A sends to B"). This drives the dependency graph used for the flowchart. The graph is used to show what systems interact with which and how; describe interaction flow clearly in purpose or system details so it can be visualized.
+- Set dependencies to reflect interaction flow: for each system, list the systems it interfaces with or uses (data flow, triggers, "A sends to B"). Use the object form with "slug" and "description" so each link has a short label (e.g. "sends selected quest", "consumes hero stats"). This drives the dependency graph used for the flowchart.
 - Use the dependency graph in the project context when existing systems are present. When proposing new systems, set dependencies so the graph shows how systems connect.
 - Fit new ideas into existing systems where appropriate; suggest new systems when needed.
 
@@ -288,13 +288,16 @@ Example shape (replace with real content; suggestedSystems and suggestedSystemDe
       "name": "Quest Selection",
       "systemSlug": "quest-selection",
       "purpose": "Chooses which dungeons or objectives the guild pursues.",
-      "dependencies": ["combat-encounters"]
+      "dependencies": [{ "slug": "combat-encounters", "description": "sends selected dungeon to run" }]
     },
     {
       "name": "Combat / Encounters",
       "systemSlug": "combat-encounters",
       "purpose": "Runs dungeon rooms and combat; hosts bosses and heroes.",
-      "dependencies": ["reputation", "heroes-units"]
+      "dependencies": [
+        { "slug": "reputation", "description": "updates reputation on completion" },
+        { "slug": "heroes-units", "description": "uses hero stats and roster" }
+      ]
     }
   ],
   "extractedSystemDetails": [

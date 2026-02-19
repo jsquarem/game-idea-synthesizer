@@ -41,7 +41,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import oneDark from 'react-syntax-highlighter/dist/esm/styles/prism/one-dark'
 import { cn } from '@/lib/utils'
 import type { ExtractedSystemStub, ExtractedSystemDetailStub } from '@/lib/ai/parse-synthesis-response'
-import { parseSynthesisResponse } from '@/lib/ai/parse-synthesis-response'
+import { parseSynthesisResponse, normalizeDependencyEntry } from '@/lib/ai/parse-synthesis-response'
 import {
   groupAndSortModels,
   getModelDescription,
@@ -180,15 +180,18 @@ function ExtractionAccordion({
                   {(s.dependencies ?? []).length > 0 ? (
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       <span className="text-xs text-muted-foreground">Interacts with:</span>
-                      {(s.dependencies ?? []).map((slug) => (
-                        <Badge
-                          key={slug}
-                          variant="secondary"
-                          className="text-xs font-normal px-1.5 py-0"
-                        >
-                          {slug}
-                        </Badge>
-                      ))}
+                      {(s.dependencies ?? []).map((entry) => {
+                        const { slug } = normalizeDependencyEntry(entry)
+                        return (
+                          <Badge
+                            key={slug}
+                            variant="secondary"
+                            className="text-xs font-normal px-1.5 py-0"
+                          >
+                            {slug}
+                          </Badge>
+                        )
+                      })}
                     </div>
                   ) : (
                     <span className="text-xs text-muted-foreground/70 mt-1">No interaction links</span>
@@ -947,12 +950,13 @@ export function SynthesizeWizard({
               ? idToSlug.get(sel.existingSystemId)
               : undefined
         if (!sourceSlug) continue
-        for (const targetSlug of stub.dependencies) {
+        for (const entry of stub.dependencies) {
+          const { slug: targetSlug, description } = normalizeDependencyEntry(entry)
           if (!effectiveSlugs.has(targetSlug)) continue
           const key = `${sourceSlug}\n${targetSlug}`
           if (seen.has(key)) continue
           seen.add(key)
-          edgesToApply.push({ sourceSlug, targetSlug })
+          edgesToApply.push({ sourceSlug, targetSlug, description })
         }
       }
     }
@@ -1207,12 +1211,13 @@ export function SynthesizeWizard({
       const sel = convertSelections.get(i)
       if (sel?.action === 'discard' || !stub?.dependencies?.length) return
       const sourceSlug = effectiveSourceSlugByIndex.get(i) ?? stub.systemSlug ?? slugifyName(stub.name ?? 'system')
-      for (const targetSlug of stub.dependencies) {
+      for (const entry of stub.dependencies) {
+        const { slug: targetSlug, description } = normalizeDependencyEntry(entry)
         if (!effectiveSlugs.has(targetSlug)) continue
         const key = `${sourceSlug}\n${targetSlug}`
         if (seen.has(key)) continue
         seen.add(key)
-        edges.push({ sourceSlug, targetSlug })
+        edges.push({ sourceSlug, targetSlug, description })
       }
     })
     return edges
@@ -1946,11 +1951,14 @@ export function SynthesizeWizard({
                                       {(s.dependencies ?? []).length > 0 ? (
                                         <div className="flex flex-wrap items-center gap-1.5 mt-1">
                                           <span className="text-xs text-muted-foreground">Interacts with:</span>
-                                          {(s.dependencies ?? []).map((slug) => (
-                                            <Badge key={slug} variant="secondary" className="text-xs font-normal px-1.5 py-0">
-                                              {slug}
-                                            </Badge>
-                                          ))}
+                                          {(s.dependencies ?? []).map((entry) => {
+                                            const { slug } = normalizeDependencyEntry(entry)
+                                            return (
+                                              <Badge key={slug} variant="secondary" className="text-xs font-normal px-1.5 py-0">
+                                                {slug}
+                                              </Badge>
+                                            )
+                                          })}
                                         </div>
                                       ) : null}
                                     </div>

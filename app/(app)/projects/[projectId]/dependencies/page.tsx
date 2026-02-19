@@ -17,14 +17,6 @@ export default async function DependenciesPage({
   ])
   if (!graphResult.success) notFound()
 
-  const { nodes, implementationOrder, hasCycles } = graphResult.data
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]))
-
-  const implementationOrderList = implementationOrder.map((id) => ({
-    id,
-    label: nodeMap.get(id)?.label ?? id,
-  }))
-
   const edgesList = deps.map((d) => ({
     sourceId: d.sourceSystemId,
     sourceName: d.sourceSystem.name,
@@ -48,8 +40,6 @@ export default async function DependenciesPage({
   return (
     <DependenciesContent
       projectId={projectId}
-      implementationOrder={implementationOrderList}
-      hasCycles={hasCycles}
       edges={edgesList}
       systemsForPanel={systemsForPanel}
       systems={systems}
